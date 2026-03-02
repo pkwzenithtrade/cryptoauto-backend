@@ -29,5 +29,6 @@ async function startServer() {
     console.error("Erro ao conectar no MongoDB:", error);
   }
 }
-
+const authRoutes = require('./src/routes/auth.routes');
+app.use('/auth', authRoutes);
 startServer();
