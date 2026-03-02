@@ -1,3 +1,5 @@
+require("dotenv").config();
+console.log("JWT_SECRET no login:", process.env.JWT_SECRET);
 console.log("INICIANDO SERVIDOR...");
 
 require('dotenv').config();
