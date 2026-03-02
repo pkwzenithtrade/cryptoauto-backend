@@ -1,4 +1,5 @@
 console.log("INICIANDO SERVIDOR...");
+
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -11,10 +12,22 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
 
-app.get("/", (req, res) => {
-  res.send("Servidor funcionando");
-});
+async function startServer() {
+  try {
+    await mongoose.connect(process.env.MONGO_URI);
+    console.log("MongoDB conectado");
 
-app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
-});
+    app.get("/", (req, res) => {
+      res.send("Servidor funcionando");
+    });
+
+    app.listen(PORT, () => {
+      console.log(`Servidor rodando na porta ${PORT}`);
+    });
+
+  } catch (error) {
+    console.error("Erro ao conectar no MongoDB:", error);
+  }
+}
+
+startServer();
