@@ -19,5 +19,13 @@ router.post("/add", async (req, res) => {
  })
 
 })
+router.get("/:userId", async (req, res) => {
 
+ const { userId } = req.params
+
+ const portfolio = await Portfolio.find({ userId })
+
+ res.json(portfolio)
+
+})
 module.exports = router
