@@ -1,7 +1,7 @@
 const express = require("express")
 const router = express.Router()
 const Portfolio = require("../models/Portfolio")
-
+const { getCryptoPrice } = require("../services/crypto.service")
 router.post("/add", async (req, res) => {
 
  const { userId, coin, amount } = req.body
@@ -26,6 +26,15 @@ router.get("/:userId", async (req, res) => {
  const portfolio = await Portfolio.find({ userId })
 
  res.json(portfolio)
+
+})
+router.get("/price/:coin", async (req, res) => {
+
+ const coin = req.params.coin
+
+ const price = await getCryptoPrice(coin)
+
+ res.json(price)
 
 })
 module.exports = router
