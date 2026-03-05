@@ -19,15 +19,7 @@ router.post("/add", async (req, res) => {
  })
 
 })
-router.get("/:userId", async (req, res) => {
 
- const { userId } = req.params
-
- const portfolio = await Portfolio.find({ userId })
-
- res.json(portfolio)
-
-})
 router.get("/price/:coin", async (req, res) => {
 
  const coin = req.params.coin
@@ -37,4 +29,15 @@ router.get("/price/:coin", async (req, res) => {
  res.json(price)
 
 })
+
+router.get("/:userId", async (req, res) => {
+
+ const { userId } = req.params
+
+ const portfolio = await Portfolio.find({ userId })
+
+ res.json(portfolio)
+
+})
+
 module.exports = router
