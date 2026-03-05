@@ -14,7 +14,13 @@ app.use(express.json());
 
 const authRoutes = require("./src/routes/auth.routes");
 app.use("/auth", authRoutes);
-
+app.get("/dashboard", authMiddleware, (req, res) => {
+  res.json({
+    message: "Acesso autorizado",
+    userId: req.userId
+  });
+});
+const authMiddleware = require("./src/middleware/auth.middleware");
 const PORT = process.env.PORT || 3000;
 
 async function startServer() {
