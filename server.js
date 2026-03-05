@@ -13,7 +13,7 @@ app.use(cors());
 app.use(express.json());
 
 const authRoutes = require("./src/routes/auth.routes");
-const portfolioRoutes = require("./src/routes/portfolio");
+const portfolioRoutes = require("./src/routes/portfolio.routes");
 app.use("/auth", authRoutes);
 app.use("/portfolio", portfolioRoutes);
 const authMiddleware = require("./src/middleware/auth.middleware");
