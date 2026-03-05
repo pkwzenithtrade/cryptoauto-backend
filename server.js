@@ -13,7 +13,9 @@ app.use(cors());
 app.use(express.json());
 
 const authRoutes = require("./src/routes/auth.routes");
+const portfolioRoutes = require("./src/routes/portfolio");
 app.use("/auth", authRoutes);
+app.use("/portfolio", portfolioRoutes);
 const authMiddleware = require("./src/middleware/auth.middleware");
 app.get("/dashboard", authMiddleware, (req, res) => {
   res.json({
