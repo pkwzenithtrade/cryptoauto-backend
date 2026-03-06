@@ -39,22 +39,14 @@ router.get("/price/:coin", async (req, res) => {
 
   const data = await getCryptoPrice(coin)
 
-  if (!data || !data[coin]) {
-   return res.status(404).json({
-    error: "Criptomoeda não encontrada ou erro na API"
-   })
-  }
+  console.log("MOEDA:", coin)
+  console.log("RESPOSTA API:", data)
 
-  const price = data[coin].usd
-
-  res.json({
-   coin,
-   price
-  })
+  res.json(data)
 
  } catch (error) {
 
-  console.log(error)
+  console.log("ERRO:", error)
 
   res.status(500).json({
    error: "Erro ao buscar preço da cripto"
