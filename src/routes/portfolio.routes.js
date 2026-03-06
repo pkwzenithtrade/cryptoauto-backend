@@ -5,29 +5,54 @@ const { getCryptoPrice } = require("../services/crypto.service")
 
 router.post("/add", async (req, res) => {
 
- const { userId, coin, amount } = req.body
+ try {
 
- const newPortfolio = new Portfolio({
-  userId,
-  coin,
-  amount
- })
+  const { userId, coin, amount } = req.body
 
- await newPortfolio.save()
+  const newPortfolio = new Portfolio({
+   userId,
+   coin,
+   amount
+  })
 
- res.json({
-  message:"Cripto adicionada"
- })
+  await newPortfolio.save()
+
+  res.json({
+   message: "Cripto adicionada"
+  })
+
+ } catch (error) {
+
+  res.status(500).json({
+   error: "Erro ao salvar cripto"
+  })
+
+ }
 
 })
 
 router.get("/price/:coin", async (req, res) => {
 
- const coin = req.params.coin
+ try {
 
- const price = await getCryptoPrice(coin)
+  const coin = req.params.coin
 
- res.json(price)
+  const data = await getCryptoPrice(coin)
+
+  const price = data[coin].usd
+
+  res.json({
+   coin: coin,
+   price: price
+  })
+
+ } catch (error) {
+
+  res.status(500).json({
+   error: "Erro ao buscar preço da cripto"
+  })
+
+ }
 
 })
 
