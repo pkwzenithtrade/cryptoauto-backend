@@ -3,16 +3,12 @@ const router = express.Router()
 const Portfolio = require("../models/Portfolio")
 const { getCryptoPrice } = require("../services/crypto.service")
 
-// Mapeamento das moedas
 const coinMap = {
  btc: "bitcoin",
  eth: "ethereum",
  sol: "solana"
 }
 
-// ===============================
-// ADICIONAR CRIPTO NO PORTFOLIO
-// ===============================
 router.post("/add", async (req, res) => {
 
  try {
@@ -43,36 +39,41 @@ router.post("/add", async (req, res) => {
 
 })
 
-
-// ===============================
-// BUSCAR PREÇO DA CRIPTO
-// ===============================
 router.get("/price/:coin", async (req, res) => {
 
  try {
 
-  const symbol = req.params.coin.toLowerCase()
+  const coinMap = {
+   btc: "bitcoin",
+   eth: "ethereum",
+   sol: "solana"
+  }
 
-  const coin = coinMap[symbol] || symbol
+  const coinParam = req.params.coin.toLowerCase()
 
-  console.log("Moeda recebida:", symbol)
-  console.log("Moeda enviada para API:", coin)
+  const coin = coinMap[coinParam] || coinParam
+
+  console.log("MOEDA RECEBIDA:", coinParam)
+  console.log("MOEDA ENVIADA PARA API:", coin)
 
   const data = await getCryptoPrice(coin)
 
-  console.log("Resposta API:", data)
-
-  if (!data || !data[coin]) {
+  if (!data[coin]) {
    return res.status(404).json({
     error: "Criptomoeda não encontrada"
    })
   }
 
-  res.json(data)
+  const price = data[coin].usd
+
+  res.json({
+   coin,
+   price
+  })
 
  } catch (error) {
 
-  console.log("ERRO:", error.message)
+  console.log("ERRO NA ROTA:", error.message)
 
   res.status(500).json({
    error: "Erro ao buscar preço da cripto"
@@ -82,10 +83,6 @@ router.get("/price/:coin", async (req, res) => {
 
 })
 
-
-// ===============================
-// BUSCAR PORTFOLIO DO USUÁRIO
-// ===============================
 router.get("/:userId", async (req, res) => {
 
  try {
