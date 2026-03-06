@@ -22,11 +22,26 @@ router.post("/add", async (req, res) => {
 
 router.get("/price/:coin", async (req, res) => {
 
- const coin = req.params.coin
+ try {
 
- const price = await getCryptoPrice(coin)
+  const coin = req.params.coin
 
- res.json(price)
+  const data = await getCryptoPrice(coin)
+
+  const price = data[coin].usd
+
+  res.json({
+   coin: coin,
+   price: price
+  })
+
+ } catch (error) {
+
+  res.status(500).json({
+   error: "Erro ao buscar preço da cripto"
+  })
+
+ }
 
 })
 
