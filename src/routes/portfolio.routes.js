@@ -31,7 +31,6 @@ router.post("/add", async (req, res) => {
 
 })
 
-
 router.get("/price/:coin", async (req, res) => {
 
  try {
@@ -40,9 +39,9 @@ router.get("/price/:coin", async (req, res) => {
 
   const data = await getCryptoPrice(coin)
 
-  if (!data[coin]) {
+  if (!data || !data[coin]) {
    return res.status(404).json({
-    error: "Criptomoeda não encontrada"
+    error: "Criptomoeda não encontrada ou erro na API"
    })
   }
 
@@ -55,6 +54,8 @@ router.get("/price/:coin", async (req, res) => {
 
  } catch (error) {
 
+  console.log(error)
+
   res.status(500).json({
    error: "Erro ao buscar preço da cripto"
   })
@@ -62,6 +63,7 @@ router.get("/price/:coin", async (req, res) => {
  }
 
 })
+
 router.get("/:userId", async (req, res) => {
 
  const { userId } = req.params
