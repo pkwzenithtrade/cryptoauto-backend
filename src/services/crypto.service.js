@@ -6,23 +6,22 @@ async function getCryptoPrice(coin) {
 
   const url = `https://api.coingecko.com/api/v3/simple/price?ids=${coin}&vs_currencies=usd`
 
+  console.log("URL COINGECKO:", url)
+
   const response = await axios.get(url)
+
+  console.log("RESPOSTA API:", response.data)
 
   return response.data
 
  } catch (error) {
 
-  if (error.response && error.response.status === 429) {
+  console.log("ERRO COMPLETO:", error.message)
 
-   console.log("Limite da API CoinGecko atingido")
-
-   return {
-    error: "Limite de requisições da API atingido. Tente novamente em alguns segundos."
-   }
-
+  if (error.response) {
+   console.log("STATUS:", error.response.status)
+   console.log("DATA:", error.response.data)
   }
-
-  console.log("Erro ao buscar preço:", error.message)
 
   throw new Error("Erro ao buscar preço da cripto")
 
