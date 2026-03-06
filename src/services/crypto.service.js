@@ -4,17 +4,17 @@ async function getCryptoPrice(coin) {
 
  try {
 
-  const response = await axios.get(
-   `https://api.coingecko.com/api/v3/simple/price?ids=${coin}&vs_currencies=usd`
-  )
+  const url = `https://api.coingecko.com/api/v3/simple/price?ids=${coin}&vs_currencies=usd`
+
+  const response = await axios.get(url)
 
   return response.data
 
  } catch (error) {
 
-  return {
-   error: "Erro ao buscar preço"
-  }
+  console.log("ERRO COINGECKO:", error.message)
+
+  return null
 
  }
 
