@@ -2,6 +2,7 @@ const express = require("express")
 const router = express.Router()
 const Portfolio = require("../models/Portfolio")
 const { getCryptoPrice } = require("../services/crypto.service")
+
 router.post("/add", async (req, res) => {
 
  const { userId, coin, amount } = req.body
@@ -22,26 +23,11 @@ router.post("/add", async (req, res) => {
 
 router.get("/price/:coin", async (req, res) => {
 
- try {
+ const coin = req.params.coin
 
-  const coin = req.params.coin
+ const price = await getCryptoPrice(coin)
 
-  const data = await getCryptoPrice(coin)
-
-  const price = data[coin].usd
-
-  res.json({
-   coin: coin,
-   price: price
-  })
-
- } catch (error) {
-
-  res.status(500).json({
-   error: "Erro ao buscar preço da cripto"
-  })
-
- }
+ res.json(price)
 
 })
 
