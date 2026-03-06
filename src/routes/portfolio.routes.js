@@ -42,19 +42,19 @@ router.get("/price/:coin", async (req, res) => {
  try {
 
   const coinParam = req.params.coin.toLowerCase()
-
   const coin = coinMap[coinParam] || coinParam
 
   const data = await getCryptoPrice(coin)
-
-  console.log("MOEDA:", coin)
-  console.log("RESPOSTA API:", data)
 
   res.json(data)
 
  } catch (error) {
 
-  console.log("ERRO:", error)
+  if (error.response && error.response.status === 429) {
+   return res.status(429).json({
+    error: "Limite da API de preços atingido. Tente novamente em alguns segundos."
+   })
+  }
 
   res.status(500).json({
    error: "Erro ao buscar preço da cripto"
