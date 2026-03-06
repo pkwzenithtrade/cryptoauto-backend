@@ -3,6 +3,12 @@ const router = express.Router()
 const Portfolio = require("../models/Portfolio")
 const { getCryptoPrice } = require("../services/crypto.service")
 
+const coinMap = {
+ btc: "bitcoin",
+ eth: "ethereum",
+ sol: "solana"
+}
+
 router.post("/add", async (req, res) => {
 
  try {
@@ -35,7 +41,9 @@ router.get("/price/:coin", async (req, res) => {
 
  try {
 
-  const coin = req.params.coin.toLowerCase()
+  const coinParam = req.params.coin.toLowerCase()
+
+  const coin = coinMap[coinParam] || coinParam
 
   const data = await getCryptoPrice(coin)
 
