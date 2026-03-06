@@ -29,7 +29,7 @@ router.post("/add", async (req, res) => {
 
  } catch (error) {
 
-  console.log(error)
+  console.log("ERRO SALVAR:", error)
 
   res.status(500).json({
    error: "Erro ao salvar cripto"
@@ -43,25 +43,23 @@ router.get("/price/:coin", async (req, res) => {
 
  try {
 
-  const coinMap = {
-   btc: "bitcoin",
-   eth: "ethereum",
-   sol: "solana"
-  }
-
   const coinParam = req.params.coin.toLowerCase()
 
   const coin = coinMap[coinParam] || coinParam
 
   console.log("MOEDA RECEBIDA:", coinParam)
-  console.log("MOEDA ENVIADA PARA API:", coin)
+  console.log("MOEDA CONVERTIDA:", coin)
 
   const data = await getCryptoPrice(coin)
 
-  if (!data[coin]) {
+  console.log("RESPOSTA API:", data)
+
+  if (!data || !data[coin]) {
+
    return res.status(404).json({
     error: "Criptomoeda não encontrada"
    })
+
   }
 
   const price = data[coin].usd
@@ -73,7 +71,7 @@ router.get("/price/:coin", async (req, res) => {
 
  } catch (error) {
 
-  console.log("ERRO NA ROTA:", error.message)
+  console.log("ERRO NA ROTA:", error)
 
   res.status(500).json({
    error: "Erro ao buscar preço da cripto"
@@ -94,6 +92,8 @@ router.get("/:userId", async (req, res) => {
   res.json(portfolio)
 
  } catch (error) {
+
+  console.log("ERRO PORTFOLIO:", error)
 
   res.status(500).json({
    error: "Erro ao buscar portfolio"
