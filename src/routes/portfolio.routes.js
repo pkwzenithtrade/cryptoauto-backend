@@ -29,6 +29,8 @@ router.post("/add", async (req, res) => {
 
  } catch (error) {
 
+  console.log(error)
+
   res.status(500).json({
    error: "Erro ao salvar cripto"
   })
@@ -42,19 +44,24 @@ router.get("/price/:coin", async (req, res) => {
  try {
 
   const coinParam = req.params.coin.toLowerCase()
+
   const coin = coinMap[coinParam] || coinParam
 
   const data = await getCryptoPrice(coin)
+
+  if (!data || data.error) {
+
+   return res.status(400).json({
+    error: "Criptomoeda não encontrada ou erro na API"
+   })
+
+  }
 
   res.json(data)
 
  } catch (error) {
 
-  if (error.response && error.response.status === 429) {
-   return res.status(429).json({
-    error: "Limite da API de preços atingido. Tente novamente em alguns segundos."
-   })
-  }
+  console.log("ERRO:", error.message)
 
   res.status(500).json({
    error: "Erro ao buscar preço da cripto"
@@ -66,11 +73,21 @@ router.get("/price/:coin", async (req, res) => {
 
 router.get("/:userId", async (req, res) => {
 
- const { userId } = req.params
+ try {
 
- const portfolio = await Portfolio.find({ userId })
+  const { userId } = req.params
 
- res.json(portfolio)
+  const portfolio = await Portfolio.find({ userId })
+
+  res.json(portfolio)
+
+ } catch (error) {
+
+  res.status(500).json({
+   error: "Erro ao buscar portfólio"
+  })
+
+ }
 
 })
 
