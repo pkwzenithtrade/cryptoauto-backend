@@ -36,7 +36,7 @@ setInterval(async () => {
   } catch (error) {
     console.log("Erro ao atualizar mercado:", error.message);
   }
-}, 60000);
+}, 120000);
     app.get("/", (req, res) => {
       res.send("Servidor funcionando");
     });
