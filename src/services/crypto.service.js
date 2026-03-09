@@ -17,7 +17,12 @@ async function getCryptoPrice(coin) {
 
   const url = `https://api.coingecko.com/api/v3/simple/price?ids=${coin}&vs_currencies=usd`
 
-  const response = await axios.get(url, { timeout: 5000 })
+  const response = await axios.get(url, {
+  timeout: 5000,
+  headers: {
+    "User-Agent": "cryptoauto-bot"
+  }
+})
 
   cache[coin] = response.data
   cacheTime[coin] = now
