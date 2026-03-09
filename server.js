@@ -6,7 +6,7 @@ console.log("INICIANDO SERVIDOR...");
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
-
+const { getMarketData } = require("./src/mercado/marketScanner");
 const app = express();
 
 app.use(cors());
@@ -29,7 +29,10 @@ async function startServer() {
   try {
     await mongoose.connect(process.env.MONGO_URI);
     console.log("MongoDB conectado");
-
+setInterval(async () => {
+      const market = await getMarketData();
+      console.log("Mercado atualizado:", market);
+    }, 10000);
     app.get("/", (req, res) => {
       res.send("Servidor funcionando");
     });
