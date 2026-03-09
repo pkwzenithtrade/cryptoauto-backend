@@ -30,9 +30,13 @@ async function startServer() {
     await mongoose.connect(process.env.MONGO_URI);
     console.log("MongoDB conectado");
 setInterval(async () => {
-      const market = await getMarketData();
-      console.log("Mercado atualizado:", market);
-    }, 10000);
+  try {
+    const market = await getMarketData();
+    console.log("Mercado atualizado:", market);
+  } catch (error) {
+    console.log("Erro ao atualizar mercado:", error.message);
+  }
+}, 60000);
     app.get("/", (req, res) => {
       res.send("Servidor funcionando");
     });
