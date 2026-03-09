@@ -10,11 +10,13 @@ async function getCryptoPrice(coin) {
   const now = Date.now()
 
   // cache de 60 segundos
-  if (cache[coin] && (now - cacheTime[coin] < 60000)) {
+  if (cache[coin] && (now - cacheTime[coin] < 120000)) {
    console.log("USANDO CACHE")
    return cache[coin]
   }
-
+if (!coin) {
+  throw new Error("Coin não definida")
+}
   const url = `https://api.coingecko.com/api/v3/simple/price?ids=${coin}&vs_currencies=usd`
 
   const response = await axios.get(url, {
