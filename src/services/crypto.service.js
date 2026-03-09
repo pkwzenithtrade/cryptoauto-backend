@@ -10,7 +10,7 @@ async function getCryptoPrice(coin) {
   if (!coin) {
    throw new Error("Coin não definida")
   }
-
+coin = coin.toLowerCase()
   const now = Date.now()
 
   // cache de 2 minutos
