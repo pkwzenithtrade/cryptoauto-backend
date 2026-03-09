@@ -4,24 +4,25 @@ async function getMarketData() {
   try {
 
     const response = await axios.get(
-      "https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT"
+      "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=usd",
+      { timeout: 5000 }
     );
 
-    const data = {
-      price: parseFloat(response.data.lastPrice),
-      volume: parseFloat(response.data.volume),
-      change: parseFloat(response.data.priceChangePercent)
-    };
-
-    console.log("DADOS DO MERCADO:", data);
-
-    return data;
+    return response.data;
 
   } catch (error) {
 
-    console.error("Erro ao buscar dados do mercado:", error.message);
+    console.log("Erro ao buscar dados do mercado:", error.message);
+
+    return {
+      bitcoin: { usd: 0 },
+      ethereum: { usd: 0 },
+      solana: { usd: 0 }
+    };
 
   }
 }
 
-module.exports = { getMarketData };
+module.exports = {
+  getMarketData
+};
