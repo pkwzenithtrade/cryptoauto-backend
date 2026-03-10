@@ -9,14 +9,16 @@ const mongoose = require("mongoose");
 const { getMarketData } = require("./src/mercado/marketScanner");
 const app = express();
 const { scanOpportunities } = require("./src/ai/opportunityHunter");
+const authRoutes = require("./src/routes/auth.routes");
+const portfolioRoutes = require("./src/routes/portfolio.routes");
+const authMiddleware = require("./src/middleware/auth.middleware");
+
 app.use(cors());
 app.use(express.json());
 
-const authRoutes = require("./src/routes/auth.routes");
-const portfolioRoutes = require("./src/routes/portfolio.routes");
 app.use("/auth", authRoutes);
 app.use("/portfolio", portfolioRoutes);
-const authMiddleware = require("./src/middleware/auth.middleware");
+
 app.get("/dashboard", authMiddleware, (req, res) => {
   res.json({
     message: "Acesso autorizado",
