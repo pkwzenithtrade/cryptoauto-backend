@@ -56,7 +56,21 @@ async function startServer() {
     app.get("/", (req, res) => {
       res.send("Servidor funcionando");
     });
+app.get("/ai/opportunities", async (req, res) => {
 
+ try {
+
+  const opportunities = await scanOpportunities()
+
+  res.json(opportunities)
+
+ } catch (error) {
+
+  res.status(500).json({ error: "Erro ao buscar oportunidades" })
+
+ }
+
+});
     app.listen(PORT, () => {
       console.log(`Servidor rodando na porta ${PORT}`);
     });
