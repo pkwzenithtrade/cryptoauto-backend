@@ -29,7 +29,21 @@ async function startServer() {
   try {
     await mongoose.connect(process.env.MONGO_URI);
     console.log("MongoDB conectado");
-setInterval(async () => {
+
+    setInterval(async () => {
+  try {
+
+    const opportunities = await scanOpportunities()
+
+    console.log("OPORTUNIDADES IA:", opportunities)
+
+  } catch (error) {
+
+    console.log("Erro no Opportunity Hunter:", error.message)
+
+  }
+}, 20000)
+    setInterval(async () => {
   try {
     const market = await getMarketData();
     console.log("Mercado atualizado:", market);
