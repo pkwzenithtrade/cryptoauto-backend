@@ -8,7 +8,7 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const { getMarketData } = require("./src/mercado/marketScanner");
 const app = express();
-
+const { scanOpportunities } = require("./src/ai/opportunityHunter");
 app.use(cors());
 app.use(express.json());
 
