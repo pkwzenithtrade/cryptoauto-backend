@@ -8,8 +8,8 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const { getMarketData } = require("./src/mercado/marketScanner");
 const app = express();
+let lastOpportunities = []
 const { scanOpportunities } = require("./src/ai/opportunityHunter");
-lastOpportunities = await scanOpportunities()
 const authRoutes = require("./src/routes/auth.routes");
 const portfolioRoutes = require("./src/routes/portfolio.routes");
 const authMiddleware = require("./src/middleware/auth.middleware");
@@ -36,8 +36,12 @@ async function startServer() {
     setInterval(async () => {
   try {
 
+    setInterval(async () => {
+  try {
+
     lastOpportunities = await scanOpportunities()
-console.log("OPORTUNIDADES IA:", lastOpportunities)
+
+    console.log("OPORTUNIDADES IA:", lastOpportunities)
 
   } catch (error) {
 
