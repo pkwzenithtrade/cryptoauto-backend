@@ -66,14 +66,16 @@ setInterval(async () => {
 }, 120000)
     
     app.get("/", (req, res) => {
-      res.send("Servidor funcionando");
-    });
-app.get("/ai/opportunities", (req, res) => {
-  res.json(lastOpportunities)
+  res.send("Servidor funcionando");
 });
-    app.listen(PORT, () => {
-      console.log(`Servidor rodando na porta ${PORT}`);
-    });
+
+app.get("/ai/opportunities", (req, res) => {
+  res.json(lastOpportunities);
+});
+
+app.listen(PORT, () => {
+  console.log(`Servidor rodando na porta ${PORT}`);
+});
 
   } catch (error) {
     console.error("Erro ao conectar no MongoDB:", error);
