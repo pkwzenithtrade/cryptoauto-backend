@@ -69,10 +69,8 @@ setInterval(async () => {
       res.send("Servidor funcionando");
     });
 app.get("/ai/opportunities", (req, res) => {
-
-  try {
-
-    res.json(lastOpportunities)
+  res.json(lastOpportunities)
+});
 
   } catch (error) {
 
