@@ -72,8 +72,6 @@ app.get("/ai/opportunities", async (req, res) => {
 
   res.json(lastOpportunities)
 
-  res.json(opportunities)
-
  } catch (error) {
 
   res.status(500).json({ error: "Erro ao buscar oportunidades" })
