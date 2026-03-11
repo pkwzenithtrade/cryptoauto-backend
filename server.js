@@ -9,6 +9,7 @@ const mongoose = require("mongoose");
 const { getMarketData } = require("./src/mercado/marketScanner");
 const app = express();
 let lastOpportunities = []
+console.log("AI Scanner iniciado")
 const { scanOpportunities } = require("./src/ai/opportunityHunter");
 const authRoutes = require("./src/routes/auth.routes");
 const portfolioRoutes = require("./src/routes/portfolio.routes");
