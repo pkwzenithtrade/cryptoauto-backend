@@ -34,6 +34,7 @@ async function startServer() {
     console.log("MongoDB conectado");
 
 // Scanner de oportunidades IA
+    lastOpportunities = await scanOpportunities()
 setInterval(async () => {
   try {
 
@@ -43,7 +44,7 @@ setInterval(async () => {
 
   } catch (error) {
 
-    console.log("Erro no Opportunity Hunter:", error.message)
+    console.log("Erro no Opportunity Hunter:", error)
 
   }
 }, 20000)
@@ -66,7 +67,7 @@ setInterval(async () => {
     app.get("/", (req, res) => {
       res.send("Servidor funcionando");
     });
-app.get("/ai/opportunities", async (req, res) => {
+app.get("/ai/opportunities", (req, res) => {
 
  try {
 
