@@ -34,6 +34,7 @@ async function startServer() {
     console.log("MongoDB conectado");
 
 // Scanner de oportunidades IA
+    console.log("AI Scanner iniciado")
     lastOpportunities = await scanOpportunities()
 setInterval(async () => {
   try {
