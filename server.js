@@ -71,16 +71,6 @@ setInterval(async () => {
 app.get("/ai/opportunities", (req, res) => {
   res.json(lastOpportunities)
 });
-
-  } catch (error) {
-
-    res.status(500).json({
-      error: "Erro ao buscar oportunidades"
-    })
-
-  }
-
-});
     app.listen(PORT, () => {
       console.log(`Servidor rodando na porta ${PORT}`);
     });
