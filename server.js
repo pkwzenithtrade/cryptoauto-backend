@@ -70,13 +70,17 @@ setInterval(async () => {
     });
 app.get("/ai/opportunities", (req, res) => {
 
-  res.json(lastOpportunities)
+  try {
 
- } catch (error) {
+    res.json(lastOpportunities)
 
-  res.status(500).json({ error: "Erro ao buscar oportunidades" })
+  } catch (error) {
 
- }
+    res.status(500).json({
+      error: "Erro ao buscar oportunidades"
+    })
+
+  }
 
 });
     app.listen(PORT, () => {
