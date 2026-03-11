@@ -33,10 +33,8 @@ async function startServer() {
     await mongoose.connect(process.env.MONGO_URI);
     console.log("MongoDB conectado");
 
-    setInterval(async () => {
-  try {
-
-    setInterval(async () => {
+// Scanner de oportunidades IA
+setInterval(async () => {
   try {
 
     lastOpportunities = await scanOpportunities()
@@ -49,14 +47,22 @@ async function startServer() {
 
   }
 }, 20000)
-    setInterval(async () => {
+    
+// Scanner de mercado
+setInterval(async () => {
   try {
-    const market = await getMarketData();
-    console.log("Mercado atualizado:", market);
+
+    const market = await getMarketData()
+
+    console.log("Mercado atualizado:", market)
+
   } catch (error) {
-    console.log("Erro ao atualizar mercado:", error.message);
+
+    console.log("Erro ao atualizar mercado:", error.message)
+
   }
-}, 120000);
+}, 120000)
+    
     app.get("/", (req, res) => {
       res.send("Servidor funcionando");
     });
@@ -64,7 +70,7 @@ app.get("/ai/opportunities", async (req, res) => {
 
  try {
 
-  const opportunities = await scanOpportunities()
+  res.json(lastOpportunities)
 
   res.json(opportunities)
 
