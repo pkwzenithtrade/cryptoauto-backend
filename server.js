@@ -44,7 +44,7 @@ setInterval(async () => {
 
   } catch (error) {
 
-    console.log("Erro no Opportunity Hunter:", error)
+      console.error("Erro no Opportunity Hunter:", error)
 
   }
 }, 20000)
@@ -59,7 +59,7 @@ setInterval(async () => {
 
   } catch (error) {
 
-    console.log("Erro ao atualizar mercado:", error.message)
+    console.error("Erro ao atualizar mercado:", error)
 
   }
 }, 120000)
