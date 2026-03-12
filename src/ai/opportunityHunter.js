@@ -1,63 +1,63 @@
 const { getCryptoPrice } = require("../services/crypto.service");
 
-// CONFIGURAÇÃO DAS MOEDAS E REGRAS
+// CONFIGURAÇÃO DAS MOEDAS
 const COINS_CONFIG = {
   bitcoin: {
-    label: "Bitcoin",
+    name: "Bitcoin",
     buyBelow: 30000,
-    sellAbove: 70000,
-    confidenceBuy: 80,
-    confidenceSell: 75
+    sellAbove: 70000
   },
 
   ethereum: {
-    label: "Ethereum",
+    name: "Ethereum",
     buyBelow: 1500,
-    sellAbove: 4000,
-    confidenceBuy: 70,
-    confidenceSell: 70
+    sellAbove: 4000
   },
 
   solana: {
-    label: "Solana",
+    name: "Solana",
     buyBelow: 80,
-    sellAbove: 250,
-    confidenceBuy: 65,
-    confidenceSell: 65
+    sellAbove: 250
   },
 
   "avalanche-2": {
-    label: "Avalanche",
+    name: "Avalanche",
     buyBelow: 20,
-    sellAbove: 80,
-    confidenceBuy: 60,
-    confidenceSell: 60
+    sellAbove: 80
   },
 
   chainlink: {
-    label: "Chainlink",
+    name: "Chainlink",
     buyBelow: 10,
-    sellAbove: 35,
-    confidenceBuy: 65,
-    confidenceSell: 65
+    sellAbove: 35
   },
 
   "matic-network": {
-    label: "Polygon",
+    name: "Polygon",
     buyBelow: 0.5,
-    sellAbove: 2,
-    confidenceBuy: 60,
-    confidenceSell: 60
+    sellAbove: 2
   },
 
   polkadot: {
-    label: "Polkadot",
+    name: "Polkadot",
     buyBelow: 5,
-    sellAbove: 25,
-    confidenceBuy: 60,
-    confidenceSell: 60
+    sellAbove: 25
   }
 };
+
+// CALCULA SCORE DE OPORTUNIDADE
+function calculateScore(price, buyBelow, sellAbove) {
+
+  if (price < buyBelow) {
+    return ((buyBelow - price) / buyBelow) * 100;
+  }
+
+  if (price > sellAbove) {
+    return ((price - sellAbove) / sellAbove) * 100;
+  }
+
+  return 0;
+}
 
 // FUNÇÃO PRINCIPAL
 async function scanOpportunities() {
@@ -65,6 +65,7 @@ async function scanOpportunities() {
   try {
 
     const coins = Object.keys(COINS_CONFIG);
+
     let opportunities = [];
 
     for (const coin of coins) {
@@ -81,26 +82,26 @@ async function scanOpportunities() {
 
       let signal = "HOLD";
       let confidence = 50;
-      let score = 0;
 
-      // LÓGICA DE SINAL
       if (price < rules.buyBelow) {
         signal = "BUY";
-        confidence = rules.confidenceBuy;
-
-        score = ((rules.buyBelow - price) / rules.buyBelow) * 100;
+        confidence = 70;
       }
 
       if (price > rules.sellAbove) {
         signal = "SELL";
-        confidence = rules.confidenceSell;
-
-        score = ((price - rules.sellAbove) / rules.sellAbove) * 100;
+        confidence = 70;
       }
+
+      const score = calculateScore(
+        price,
+        rules.buyBelow,
+        rules.sellAbove
+      );
 
       opportunities.push({
         coin,
-        name: rules.label,
+        name: rules.name,
         price,
         signal,
         confidence,
@@ -109,7 +110,7 @@ async function scanOpportunities() {
 
     }
 
-    // ORDENA AS MELHORES OPORTUNIDADES
+    // ORDENA MELHORES OPORTUNIDADES
     opportunities.sort((a, b) => b.score - a.score);
 
     return opportunities;
