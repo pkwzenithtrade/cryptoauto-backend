@@ -1,153 +1,129 @@
 const { getCryptoPrice } = require("../services/crypto.service");
 
+// CONFIGURAÇÃO DAS MOEDAS E REGRAS
+const COINS_CONFIG = {
+  bitcoin: {
+    label: "Bitcoin",
+    buyBelow: 30000,
+    sellAbove: 70000,
+    confidenceBuy: 80,
+    confidenceSell: 75
+  },
+
+  ethereum: {
+    label: "Ethereum",
+    buyBelow: 1500,
+    sellAbove: 4000,
+    confidenceBuy: 70,
+    confidenceSell: 70
+  },
+
+  solana: {
+    label: "Solana",
+    buyBelow: 80,
+    sellAbove: 250,
+    confidenceBuy: 65,
+    confidenceSell: 65
+  },
+
+  "avalanche-2": {
+    label: "Avalanche",
+    buyBelow: 20,
+    sellAbove: 80,
+    confidenceBuy: 60,
+    confidenceSell: 60
+  },
+
+  chainlink: {
+    label: "Chainlink",
+    buyBelow: 10,
+    sellAbove: 35,
+    confidenceBuy: 65,
+    confidenceSell: 65
+  },
+
+  "matic-network": {
+    label: "Polygon",
+    buyBelow: 0.5,
+    sellAbove: 2,
+    confidenceBuy: 60,
+    confidenceSell: 60
+  },
+
+  polkadot: {
+    label: "Polkadot",
+    buyBelow: 5,
+    sellAbove: 25,
+    confidenceBuy: 60,
+    confidenceSell: 60
+  }
+};
+
+// FUNÇÃO PRINCIPAL
 async function scanOpportunities() {
 
- try {
+  try {
 
-  const coins = [
-   "bitcoin",
-   "ethereum",
-   "solana",
-   "avalanche",
-   "chainlink",
-   "polygon",
-   "polkadot"
-  ];
+    const coins = Object.keys(COINS_CONFIG);
+    let opportunities = [];
 
-  let opportunities = [];
+    for (const coin of coins) {
 
-  for (const coin of coins) {
+      const data = await getCryptoPrice(coin);
 
-   const data = await getCryptoPrice(coin);
+      if (!data || !data[coin]) continue;
 
-   const price = data[coin]?.usd || 0;
+      const price = data[coin]?.usd || 0;
 
-   if (!price) continue;
+      if (!price) continue;
 
-   let signal = "HOLD";
-   let confidence = 50;
+      const rules = COINS_CONFIG[coin];
 
-   // lógica de sinais
+      let signal = "HOLD";
+      let confidence = 50;
+      let score = 0;
 
-   if (coin === "bitcoin") {
+      // LÓGICA DE SINAL
+      if (price < rules.buyBelow) {
+        signal = "BUY";
+        confidence = rules.confidenceBuy;
 
-    if (price < 30000) {
-     signal = "BUY";
-     confidence = 80;
+        score = ((rules.buyBelow - price) / rules.buyBelow) * 100;
+      }
+
+      if (price > rules.sellAbove) {
+        signal = "SELL";
+        confidence = rules.confidenceSell;
+
+        score = ((price - rules.sellAbove) / rules.sellAbove) * 100;
+      }
+
+      opportunities.push({
+        coin,
+        name: rules.label,
+        price,
+        signal,
+        confidence,
+        score: Number(score.toFixed(2))
+      });
+
     }
 
-    if (price > 70000) {
-     signal = "SELL";
-     confidence = 75;
-    }
+    // ORDENA AS MELHORES OPORTUNIDADES
+    opportunities.sort((a, b) => b.score - a.score);
 
-   }
+    return opportunities;
 
-   if (coin === "ethereum") {
+  } catch (error) {
 
-    if (price < 1500) {
-     signal = "BUY";
-     confidence = 70;
-    }
+    console.log("Erro no Opportunity Hunter:", error.message);
 
-    if (price > 4000) {
-     signal = "SELL";
-     confidence = 70;
-    }
-
-   }
-
-   if (coin === "solana") {
-
-    if (price < 80) {
-     signal = "BUY";
-     confidence = 65;
-    }
-
-    if (price > 250) {
-     signal = "SELL";
-     confidence = 65;
-    }
-
-   }
-
-   if (coin === "avalanche") {
-
- if (price < 20) {
-  signal = "BUY";
-  confidence = 60;
- }
-
- if (price > 80) {
-  signal = "SELL";
-  confidence = 60;
-}
-
-}
-
-if (coin === "chainlink") {
-
- if (price < 10) {
-  signal = "BUY";
-  confidence = 65;
- }
-
- if (price > 35) {
-  signal = "SELL";
-  confidence = 65;
-}
-
-}
-
-if (coin === "polygon") {
-
- if (price < 0.50) {
-  signal = "BUY";
-  confidence = 60;
- }
-
- if (price > 2) {
-  signal = "SELL";
-  confidence = 60;
-}
-
-}
-
-if (coin === "polkadot") {
-
- if (price < 5) {
-  signal = "BUY";
-  confidence = 60;
- }
-
- if (price > 25) {
-  signal = "SELL";
-  confidence = 60;
- }
-
- }
- 
-   opportunities.push({
-    coin,
-    price,
-    signal,
-    confidence
-   });
+    return [];
 
   }
-
-  return opportunities;
-
- } catch (error) {
-
-  console.log("Erro no Opportunity Hunter:", error.message);
-
-  return [];
-
- }
 
 }
 
 module.exports = {
- scanOpportunities
+  scanOpportunities
 };
