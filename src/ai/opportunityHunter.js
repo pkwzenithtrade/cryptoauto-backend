@@ -4,7 +4,15 @@ async function scanOpportunities() {
 
  try {
 
-  const coins = ["bitcoin","ethereum","solana"];
+  const coins = [
+   "bitcoin",
+   "ethereum",
+   "solana",
+   "avalanche",
+   "chainlink",
+   "polygon",
+   "polkadot"
+  ];
 
   let opportunities = [];
 
@@ -20,49 +28,105 @@ async function scanOpportunities() {
    let confidence = 50;
 
    // lógica de sinais
-if (coin === "bitcoin") {
 
- if (price < 30000) {
+   if (coin === "bitcoin") {
+
+    if (price < 30000) {
+     signal = "BUY";
+     confidence = 80;
+    }
+
+    if (price > 70000) {
+     signal = "SELL";
+     confidence = 75;
+    }
+
+   }
+
+   if (coin === "ethereum") {
+
+    if (price < 1500) {
+     signal = "BUY";
+     confidence = 70;
+    }
+
+    if (price > 4000) {
+     signal = "SELL";
+     confidence = 70;
+    }
+
+   }
+
+   if (coin === "solana") {
+
+    if (price < 80) {
+     signal = "BUY";
+     confidence = 65;
+    }
+
+    if (price > 250) {
+     signal = "SELL";
+     confidence = 65;
+    }
+
+   }
+
+   if (coin === "avalanche") {
+
+ if (price < 20) {
   signal = "BUY";
-  confidence = 80;
+  confidence = 60;
  }
 
- if (price > 70000) {
+ if (price > 80) {
   signal = "SELL";
-  confidence = 75;
- }
+  confidence = 60;
+}
 
 }
 
-if (coin === "ethereum") {
+if (coin === "chainlink") {
 
- if (price < 1500) {
-  signal = "BUY";
-  confidence = 70;
- }
-
- if (price > 4000) {
-  signal = "SELL";
-  confidence = 70;
- }
-
-}
-
-if (coin === "solana") {
-
- if (price < 80) {
+ if (price < 10) {
   signal = "BUY";
   confidence = 65;
  }
 
- if (price > 250) {
+ if (price > 35) {
   signal = "SELL";
   confidence = 65;
- }
+}
 
 }
-   
- opportunities.push({
+
+if (coin === "polygon") {
+
+ if (price < 0.50) {
+  signal = "BUY";
+  confidence = 60;
+ }
+
+ if (price > 2) {
+  signal = "SELL";
+  confidence = 60;
+}
+
+}
+
+if (coin === "polkadot") {
+
+ if (price < 5) {
+  signal = "BUY";
+  confidence = 60;
+ }
+
+ if (price > 25) {
+  signal = "SELL";
+  confidence = 60;
+}
+
+     }
+   opportunities.push({
     coin,
     price,
     signal,
