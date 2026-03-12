@@ -19,18 +19,50 @@ async function scanOpportunities() {
    let signal = "HOLD";
    let confidence = 50;
 
-   // lógica simples inicial
-   if (price < 30000 && coin === "bitcoin") {
-    signal = "BUY";
-    confidence = 80;
-   }
+   // lógica de sinais
+if (coin === "bitcoin") {
 
-   if (price > 70000 && coin === "bitcoin") {
-    signal = "SELL";
-    confidence = 75;
-   }
+ if (price < 30000) {
+  signal = "BUY";
+  confidence = 80;
+ }
 
-   opportunities.push({
+ if (price > 70000) {
+  signal = "SELL";
+  confidence = 75;
+ }
+
+}
+
+if (coin === "ethereum") {
+
+ if (price < 1500) {
+  signal = "BUY";
+  confidence = 70;
+ }
+
+ if (price > 4000) {
+  signal = "SELL";
+  confidence = 70;
+ }
+
+}
+
+if (coin === "solana") {
+
+ if (price < 80) {
+  signal = "BUY";
+  confidence = 65;
+ }
+
+ if (price > 250) {
+  signal = "SELL";
+  confidence = 65;
+ }
+
+}
+   
+ opportunities.push({
     coin,
     price,
     signal,
