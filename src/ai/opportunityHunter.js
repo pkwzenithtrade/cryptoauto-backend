@@ -123,9 +123,10 @@ if (coin === "polkadot") {
  if (price > 25) {
   signal = "SELL";
   confidence = 60;
-}
+ }
 
-     }
+ }
+ 
    opportunities.push({
     coin,
     price,
