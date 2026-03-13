@@ -1,4 +1,4 @@
-const { getCryptoPrice } = require("../services/crypto.service");
+const { getMultiplePrices } = require("../services/crypto.service");
 
 // CONFIGURAÇÃO DAS MOEDAS
 const COINS_CONFIG = {
@@ -63,9 +63,12 @@ function calculateScore(price, buyBelow, sellAbove) {
 // FUNÇÃO PRINCIPAL
 async function scanOpportunities() {
 
-  const opportunities = [];
-
   try {
+
+    const opportunities = [];
+
+    // BUSCA TODAS AS MOEDAS EM UMA ÚNICA CHAMADA
+    const prices = await getMultiplePrices();
 
     const coins = Object.keys(COINS_CONFIG);
 
@@ -73,11 +76,7 @@ async function scanOpportunities() {
 
       try {
 
-        const data = await getCryptoPrice(coin);
-
-        if (!data || !data[coin]) continue;
-
-        const price = data[coin]?.usd || 0;
+        const price = prices?.[coin]?.usd || 0;
 
         if (!price) continue;
 
