@@ -1,6 +1,5 @@
 require("dotenv").config();
 
-console.log("JWT_SECRET:", process.env.JWT_SECRET || "NAO DEFINIDO");
 console.log("INICIANDO SERVIDOR...");
 
 const express = require("express");
@@ -48,7 +47,7 @@ setInterval(async () => {
       console.error("Erro no Opportunity Hunter:", error)
 
   }
-}, 20000)
+}, 120000)
     
 // Scanner de mercado
 setInterval(async () => {
