@@ -5,7 +5,30 @@ const CACHE_TIME = 120000 // 2 minutos
 let cache = {}
 let lastFetch = 0
 
-async function getCryptoPrice(coin) {
+async function getMultiplePrices() {
+
+ try {
+
+  const url = "https://api.coingecko.com/api/v3/simple/price"
+
+  const response = await axios.get(url, {
+   params: {
+    ids: "bitcoin,ethereum,solana,avalanche-2,chainlink,matic-network,polkadot",
+    vs_currencies: "usd"
+   }
+  })
+
+  return response.data
+
+ } catch (error) {
+
+  console.log("ERRO API MULTI:", error.message)
+
+  return {}
+
+ }
+
+}
 
  try {
 
@@ -75,5 +98,6 @@ async function getCryptoPrice(coin) {
 }
 
 module.exports = {
- getCryptoPrice
-    }
+ getCryptoPrice,
+ getMultiplePrices
+}
