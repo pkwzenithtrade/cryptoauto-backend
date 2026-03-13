@@ -1,7 +1,9 @@
 const axios = require("axios")
 
+const CACHE_TIME = 120000 // 2 minutos
+
 let cache = {}
-let cacheTime = {}
+let lastFetch = 0
 
 async function getCryptoPrice(coin) {
 
@@ -10,36 +12,56 @@ async function getCryptoPrice(coin) {
   if (!coin) {
    throw new Error("Coin não definida")
   }
-coin = coin.toLowerCase()
+
+  coin = coin.toLowerCase()
+
   const now = Date.now()
 
-  // cache de 2 minutos
-  if (cache[coin] && (now - cacheTime[coin] < 120000)) {
-   console.log("USANDO CACHE")
-   return cache[coin]
+  // se já existe no cache e ainda é válido
+  if (cache[coin] && now - lastFetch < CACHE_TIME) {
+   console.log("USANDO CACHE:", coin)
+   return { [coin]: cache[coin] }
   }
 
-  const url = `https://api.coingecko.com/api/v3/simple/price?ids=${coin}&vs_currencies=usd`
+  const url = "https://api.coingecko.com/api/v3/simple/price"
 
   const response = await axios.get(url, {
-    timeout: 5000,
-    headers: {
-      "User-Agent": "cryptoauto-bot"
-    }
+   timeout: 5000,
+   headers: {
+    "User-Agent": "cryptoauto-ai"
+   },
+   params: {
+    ids: coin,
+    vs_currencies: "usd"
+   }
   })
 
-  cache[coin] = response.data
-  cacheTime[coin] = now
+  const price = response.data[coin]
 
-  return response.data
+  if (!price) {
+   throw new Error("Preço não encontrado")
+  }
+
+  cache[coin] = price
+  lastFetch = now
+
+  return {
+   [coin]: price
+  }
 
  } catch (error) {
 
   console.log("ERRO API:", error.message)
 
+  // fallback para cache
   if (cache[coin]) {
-   console.log("RETORNANDO PREÇO DO CACHE")
-   return cache[coin]
+
+   console.log("RETORNANDO CACHE:", coin)
+
+   return {
+    [coin]: cache[coin]
+   }
+
   }
 
   return {
@@ -54,4 +76,4 @@ coin = coin.toLowerCase()
 
 module.exports = {
  getCryptoPrice
-}
+    }
