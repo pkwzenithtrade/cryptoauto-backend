@@ -5,13 +5,15 @@ console.log("INICIANDO SERVIDOR...");
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
-const { getMarketData } = require("./src/mercado/marketScanner");
-const app = express();
-let lastOpportunities = []
+
 const { scanOpportunities } = require("./src/ai/opportunityHunter");
+const { getMarketData } = require("./src/mercado/marketScanner");
+
 const authRoutes = require("./src/routes/auth.routes");
 const portfolioRoutes = require("./src/routes/portfolio.routes");
 const authMiddleware = require("./src/middleware/auth.middleware");
+
+const app = express();
 
 app.use(cors());
 app.use(express.json());
@@ -19,66 +21,118 @@ app.use(express.json());
 app.use("/auth", authRoutes);
 app.use("/portfolio", portfolioRoutes);
 
+let lastOpportunities = [];
+
 app.get("/dashboard", authMiddleware, (req, res) => {
   res.json({
     message: "Acesso autorizado",
     userId: req.userId
   });
 });
+
 const PORT = process.env.PORT || 3000;
 
+
+// =====================================
+// INICIALIZAÇÃO DO SERVIDOR
+// =====================================
+
 async function startServer() {
+
   try {
+
     await mongoose.connect(process.env.MONGO_URI);
+
     console.log("MongoDB conectado");
 
-// Scanner de oportunidades IA
-    console.log("AI Scanner iniciado")
-    lastOpportunities = await scanOpportunities()
-setInterval(async () => {
-  try {
 
-    lastOpportunities = await scanOpportunities()
 
-    console.log("OPORTUNIDADES IA:", lastOpportunities)
+    // =====================================
+    // SCANNER DE IA
+    // =====================================
 
-  } catch (error) {
+    console.log("AI Scanner iniciado");
 
-      console.error("Erro no Opportunity Hunter:", error)
+    try {
 
-  }
-}, 120000)
-    
-// Scanner de mercado
-setInterval(async () => {
-  try {
+      lastOpportunities = await scanOpportunities();
 
-    const market = await getMarketData()
+    } catch (error) {
 
-    console.log("Mercado atualizado:", market)
+      console.log("Erro inicial no scanner:", error.message);
 
-  } catch (error) {
+    }
 
-    console.error("Erro ao atualizar mercado:", error)
+    setInterval(async () => {
 
-  }
-}, 120000)
-    
+      try {
+
+        lastOpportunities = await scanOpportunities();
+
+        console.log("OPORTUNIDADES IA:", lastOpportunities);
+
+      } catch (error) {
+
+        console.error("Erro no Opportunity Hunter:", error.message);
+
+      }
+
+    }, 120000);
+
+
+
+    // =====================================
+    // SCANNER DE MERCADO
+    // =====================================
+
+    setInterval(async () => {
+
+      try {
+
+        const market = await getMarketData();
+
+        console.log("Mercado atualizado:", market);
+
+      } catch (error) {
+
+        console.error("Erro ao atualizar mercado:", error.message);
+
+      }
+
+    }, 180000);
+
+
+
+    // =====================================
+    // ROTAS
+    // =====================================
+
     app.get("/", (req, res) => {
-  res.send("Servidor funcionando");
-});
+      res.send("Servidor funcionando");
+    });
 
-app.get("/ai/opportunities", (req, res) => {
-  res.json(lastOpportunities);
-});
+    app.get("/ai/opportunities", (req, res) => {
+      res.json(lastOpportunities);
+    });
 
-app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
-});
+
+
+    // =====================================
+    // START SERVIDOR
+    // =====================================
+
+    app.listen(PORT, () => {
+
+      console.log(`Servidor rodando na porta ${PORT}`);
+
+    });
 
   } catch (error) {
-    console.error("Erro ao conectar no MongoDB:", error);
+
+    console.error("Erro ao conectar no MongoDB:", error.message);
+
   }
+
 }
 
 startServer();
