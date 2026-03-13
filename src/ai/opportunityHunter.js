@@ -57,56 +57,65 @@ function calculateScore(price, buyBelow, sellAbove) {
   }
 
   return 0;
+
 }
 
 // FUNÇÃO PRINCIPAL
 async function scanOpportunities() {
 
+  const opportunities = [];
+
   try {
 
     const coins = Object.keys(COINS_CONFIG);
 
-    let opportunities = [];
-
     for (const coin of coins) {
 
-      const data = await getCryptoPrice(coin);
+      try {
 
-      if (!data || !data[coin]) continue;
+        const data = await getCryptoPrice(coin);
 
-      const price = data[coin]?.usd || 0;
+        if (!data || !data[coin]) continue;
 
-      if (!price) continue;
+        const price = data[coin]?.usd || 0;
 
-      const rules = COINS_CONFIG[coin];
+        if (!price) continue;
 
-      let signal = "HOLD";
-      let confidence = 50;
+        const rules = COINS_CONFIG[coin];
 
-      if (price < rules.buyBelow) {
-        signal = "BUY";
-        confidence = 70;
+        let signal = "HOLD";
+        let confidence = 50;
+
+        if (price < rules.buyBelow) {
+          signal = "BUY";
+          confidence = 70;
+        }
+
+        if (price > rules.sellAbove) {
+          signal = "SELL";
+          confidence = 70;
+        }
+
+        const score = calculateScore(
+          price,
+          rules.buyBelow,
+          rules.sellAbove
+        );
+
+        opportunities.push({
+          coin,
+          name: rules.name,
+          price,
+          signal,
+          confidence,
+          score: Number(score.toFixed(2))
+        });
+
+      } catch (coinError) {
+
+        console.log(`Erro ao analisar ${coin}:`, coinError.message);
+
       }
-
-      if (price > rules.sellAbove) {
-        signal = "SELL";
-        confidence = 70;
-      }
-
-      const score = calculateScore(
-        price,
-        rules.buyBelow,
-        rules.sellAbove
-      );
-
-      opportunities.push({
-        coin,
-        name: rules.name,
-        price,
-        signal,
-        confidence,
-        score: Number(score.toFixed(2))
-      });
 
     }
 
