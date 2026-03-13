@@ -5,18 +5,37 @@ const CACHE_TIME = 120000 // 2 minutos
 let cache = {}
 let lastFetch = 0
 
+
+// ========================================
+// BUSCA VÁRIAS MOEDAS DE UMA VEZ
+// ========================================
 async function getMultiplePrices() {
 
  try {
 
+  const now = Date.now()
+
+  // usar cache global
+  if (cache.multiple && now - lastFetch < CACHE_TIME) {
+   console.log("USANDO CACHE GLOBAL")
+   return cache.multiple
+  }
+
   const url = "https://api.coingecko.com/api/v3/simple/price"
 
   const response = await axios.get(url, {
+   timeout: 5000,
+   headers: {
+    "User-Agent": "cryptoauto-ai"
+   },
    params: {
     ids: "bitcoin,ethereum,solana,avalanche-2,chainlink,matic-network,polkadot",
     vs_currencies: "usd"
    }
   })
+
+  cache.multiple = response.data
+  lastFetch = now
 
   return response.data
 
@@ -24,11 +43,22 @@ async function getMultiplePrices() {
 
   console.log("ERRO API MULTI:", error.message)
 
+  if (cache.multiple) {
+   console.log("RETORNANDO CACHE GLOBAL")
+   return cache.multiple
+  }
+
   return {}
 
  }
 
 }
+
+
+// ========================================
+// BUSCA UMA MOEDA ESPECÍFICA
+// ========================================
+async function getCryptoPrice(coin) {
 
  try {
 
@@ -40,7 +70,7 @@ async function getMultiplePrices() {
 
   const now = Date.now()
 
-  // se já existe no cache e ainda é válido
+  // usar cache
   if (cache[coin] && now - lastFetch < CACHE_TIME) {
    console.log("USANDO CACHE:", coin)
    return { [coin]: cache[coin] }
@@ -76,7 +106,6 @@ async function getMultiplePrices() {
 
   console.log("ERRO API:", error.message)
 
-  // fallback para cache
   if (cache[coin]) {
 
    console.log("RETORNANDO CACHE:", coin)
@@ -97,7 +126,8 @@ async function getMultiplePrices() {
 
 }
 
+
 module.exports = {
  getCryptoPrice,
  getMultiplePrices
-}
+ }
