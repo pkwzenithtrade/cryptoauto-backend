@@ -101,14 +101,18 @@ async function scanOpportunities() {
           rules.sellAbove
         );
 
-        opportunities.push({
-          coin,
-          name: rules.name,
-          price,
-          signal,
-          confidence,
-          score: Number(score.toFixed(2))
-        });
+        if (score > 0) {
+
+  opportunities.push({
+    coin,
+    name: rules.name,
+    price,
+    signal,
+    confidence: Math.min(score + 50, 95),
+    score: Number(score.toFixed(2))
+  });
+
+}
 
       } catch (coinError) {
 
