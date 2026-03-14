@@ -7,6 +7,7 @@ let history = {
 };
 
 function calculateTrend(prices) {
+
   if (prices.length < 3) return "neutral";
 
   const last = prices[prices.length - 1];
@@ -16,33 +17,52 @@ function calculateTrend(prices) {
   if (last < prev) return "bearish";
 
   return "neutral";
+
 }
 
 async function getMarketData() {
+
   try {
 
     const response = await axios.get(
-      "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=usd",
-      { timeout: 5000 }
+      "https://api.coingecko.com/api/v3/simple/price",
+      {
+        timeout: 5000,
+        headers: {
+          "User-Agent": "cryptoauto-ai"
+        },
+        params: {
+          ids: "bitcoin,ethereum,solana",
+          vs_currencies: "usd"
+        }
+      }
     );
 
     const data = response.data;
 
     Object.keys(data).forEach((coin) => {
+
+      if (!history[coin]) {
+        history[coin] = [];
+      }
+
       history[coin].push(data[coin].usd);
 
       if (history[coin].length > 20) {
         history[coin].shift();
       }
+
     });
 
     const signals = {};
 
     Object.keys(history).forEach((coin) => {
+
       signals[coin] = {
-        price: data[coin].usd,
+        price: data[coin]?.usd || 0,
         trend: calculateTrend(history[coin])
       };
+
     });
 
     return signals;
@@ -58,6 +78,7 @@ async function getMarketData() {
     };
 
   }
+
 }
 
 module.exports = {
