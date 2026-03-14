@@ -30,11 +30,15 @@ app.get("/dashboard", authMiddleware, (req, res) => {
   });
 });
 
+app.get("/health", (req,res)=>{
+ res.json({status:"ok"})
+})
+
 const PORT = process.env.PORT || 3000;
 
 
 // =====================================
-// INICIALIZAÇÃO DO SERVIDOR
+// INICIALIZAÇÃO
 // =====================================
 
 async function startServer() {
@@ -46,22 +50,13 @@ async function startServer() {
     console.log("MongoDB conectado");
 
 
-
-    // =====================================
-    // SCANNER DE IA
-    // =====================================
+    // =============================
+    // IA SCANNER
+    // =============================
 
     console.log("AI Scanner iniciado");
 
-    try {
-
-      lastOpportunities = await scanOpportunities();
-
-    } catch (error) {
-
-      console.log("Erro inicial no scanner:", error.message);
-
-    }
+    lastOpportunities = await scanOpportunities();
 
     setInterval(async () => {
 
@@ -81,9 +76,9 @@ async function startServer() {
 
 
 
-    // =====================================
-    // SCANNER DE MERCADO
-    // =====================================
+    // =============================
+    // MARKET SCANNER
+    // =============================
 
     setInterval(async () => {
 
@@ -103,33 +98,27 @@ async function startServer() {
 
 
 
-    // =====================================
+    // =============================
     // ROTAS
-    // =====================================
+    // =============================
 
     app.get("/", (req, res) => {
       res.send("Servidor funcionando");
     });
 
-    app.get("/ai/opportunities", (req, res) => {
+    app.get("/ai/opportunities", authMiddleware, (req, res) => {
       res.json(lastOpportunities);
     });
 
 
 
-    // =====================================
-    // START SERVIDOR
-    // =====================================
-
     app.listen(PORT, () => {
-
       console.log(`Servidor rodando na porta ${PORT}`);
-
     });
 
   } catch (error) {
 
-    console.error("Erro ao conectar no MongoDB:", error.message);
+    console.error("Erro ao conectar MongoDB:", error.message);
 
   }
 
