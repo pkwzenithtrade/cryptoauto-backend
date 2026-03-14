@@ -1,106 +1,131 @@
-const express = require("express")
-const router = express.Router()
-const Portfolio = require("../models/Portfolio")
-const { getCryptoPrice } = require("../services/crypto.service")
+const express = require("express");
+const router = express.Router();
+
+const Portfolio = require("../models/Portfolio");
+const { getCryptoPrice } = require("../services/crypto.service");
+const authMiddleware = require("../middleware/auth.middleware");
 
 const coinMap = {
- btc: "bitcoin",
- eth: "ethereum",
- sol: "solana"
-}
+  btc: "bitcoin",
+  eth: "ethereum",
+  sol: "solana"
+};
 
-router.post("/add", async (req, res) => {
 
- try {
+// ======================================
+// ADICIONAR CRIPTO AO PORTFOLIO
+// ======================================
 
-  const { userId, coin, amount } = req.body
+router.post("/add", authMiddleware, async (req, res) => {
 
-  const newPortfolio = new Portfolio({
-   userId,
-   coin,
-   amount
-  })
+  try {
 
-  await newPortfolio.save()
+    const userId = req.userId;
+    const { coin, amount } = req.body;
 
-  res.json({
-   message: "Cripto adicionada"
-  })
+    if (!coin || !amount) {
+      return res.status(400).json({
+        error: "coin e amount são obrigatórios"
+      });
+    }
 
- } catch (error) {
+    const newPortfolio = new Portfolio({
+      userId,
+      coin,
+      amount
+    });
 
-  console.log("ERRO SALVAR:", error)
+    await newPortfolio.save();
 
-  res.status(500).json({
-   error: "Erro ao salvar cripto"
-  })
+    res.json({
+      message: "Cripto adicionada ao portfolio"
+    });
 
- }
+  } catch (error) {
 
-})
+    console.log("ERRO SALVAR:", error);
 
-router.get("/price/:coin", async (req, res) => {
-
- try {
-
-  const coinParam = req.params.coin.toLowerCase()
-
-  const coin = coinMap[coinParam] || coinParam
-
-  console.log("MOEDA RECEBIDA:", coinParam)
-  console.log("MOEDA CONVERTIDA:", coin)
-
-  const data = await getCryptoPrice(coin)
-
-  console.log("RESPOSTA API:", data)
-
-  if (!data || !data[coin]) {
-
-   return res.status(404).json({
-    error: "Criptomoeda não encontrada"
-   })
+    res.status(500).json({
+      error: "Erro ao salvar cripto"
+    });
 
   }
 
-  const price = data[coin].usd
+});
 
-  res.json({
-   coin,
-   price
-  })
 
- } catch (error) {
+// ======================================
+// BUSCAR PREÇO DA CRIPTO
+// ======================================
 
-  console.log("ERRO NA ROTA:", error)
+router.get("/price/:coin", async (req, res) => {
 
-  res.status(500).json({
-   error: "Erro ao buscar preço da cripto"
-  })
+  try {
 
- }
+    const coinParam = req.params.coin.toLowerCase();
 
-})
+    const coin = coinMap[coinParam] || coinParam;
 
-router.get("/:userId", async (req, res) => {
+    console.log("MOEDA RECEBIDA:", coinParam);
+    console.log("MOEDA CONVERTIDA:", coin);
 
- try {
+    const data = await getCryptoPrice(coin);
 
-  const { userId } = req.params
+    console.log("RESPOSTA API:", data);
 
-  const portfolio = await Portfolio.find({ userId })
+    if (!data || !data[coin]) {
 
-  res.json(portfolio)
+      return res.status(404).json({
+        error: "Criptomoeda não encontrada"
+      });
 
- } catch (error) {
+    }
 
-  console.log("ERRO PORTFOLIO:", error)
+    const price = data[coin].usd;
 
-  res.status(500).json({
-   error: "Erro ao buscar portfolio"
-  })
+    res.json({
+      coin,
+      price
+    });
 
- }
+  } catch (error) {
 
-})
+    console.log("ERRO NA ROTA:", error);
 
-module.exports = router
+    res.status(500).json({
+      error: "Erro ao buscar preço da cripto"
+    });
+
+  }
+
+});
+
+
+// ======================================
+// BUSCAR PORTFOLIO DO USUÁRIO
+// ======================================
+
+router.get("/", authMiddleware, async (req, res) => {
+
+  try {
+
+    const userId = req.userId;
+
+    const portfolio = await Portfolio.find({ userId });
+
+    res.json(portfolio);
+
+  } catch (error) {
+
+    console.log("ERRO PORTFOLIO:", error);
+
+    res.status(500).json({
+      error: "Erro ao buscar portfolio"
+    });
+
+  }
+
+});
+
+
+module.exports = router;
