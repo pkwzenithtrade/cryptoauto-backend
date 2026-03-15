@@ -15,18 +15,32 @@ router.post("/register", async (req, res) => {
 
     const { email, password } = req.body;
 
+    // Validação básica
     if (!email || !password) {
-      return res.status(400).json({ error: "Email e senha são obrigatórios" });
+      return res.status(400).json({
+        error: "Email e senha são obrigatórios"
+      });
     }
 
+    if (password.length < 6) {
+      return res.status(400).json({
+        error: "A senha deve ter pelo menos 6 caracteres"
+      });
+    }
+
+    // Verifica se usuário já existe
     const existingUser = await User.findOne({ email });
 
     if (existingUser) {
-      return res.status(400).json({ error: "Email já cadastrado" });
+      return res.status(400).json({
+        error: "Email já cadastrado"
+      });
     }
 
+    // Criptografa senha
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Cria usuário
     const user = new User({
       email,
       password: hashedPassword
@@ -66,6 +80,7 @@ router.post("/login", async (req, res) => {
       });
     }
 
+    // Busca usuário
     const user = await User.findOne({ email });
 
     if (!user) {
@@ -74,6 +89,7 @@ router.post("/login", async (req, res) => {
       });
     }
 
+    // Verifica senha
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
@@ -82,13 +98,17 @@ router.post("/login", async (req, res) => {
       });
     }
 
+    // Gera token
     const token = jwt.sign(
       { id: user._id },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
 
-    res.json({ token });
+    res.json({
+      token,
+      userId: user._id
+    });
 
   } catch (error) {
 
