@@ -47,7 +47,6 @@ app.get("/dashboard", authMiddleware, (req, res) => {
   });
 });
 
-
 // =====================================
 // TESTE DE API DO MERCADO
 // =====================================
@@ -58,25 +57,23 @@ app.get("/test-market", async (req, res) => {
 
     const axios = require("axios");
 
-    const response = await axios.get("https://api.coincap.io/v2/assets", {
-      params: {
-        limit: 5
-      }
-    });
+    const response = await axios.get("https://api.coincap.io/v2/assets");
 
-    res.json(response.data.data);
+    res.json(response.data);
 
   } catch (error) {
 
-    console.log("ERRO TEST MARKET:", error.message);
+    console.log("ERRO TEST MARKET:", error);
 
     res.status(500).json({
-      error: "Erro ao acessar API de mercado"
+      error: "Falha ao acessar API externa",
+      message: error.message
     });
 
   }
 
 });
+
 
 
 // =====================================
