@@ -57,16 +57,18 @@ app.get("/test-market", async (req, res) => {
 
     const axios = require("axios");
 
-    const response = await axios.get("https://api.coincap.io/v2/assets");
+    const response = await axios.get(
+      "https://api.binance.com/api/v3/ticker/price"
+    );
 
-    res.json(response.data);
+    res.json(response.data.slice(0,10));
 
   } catch (error) {
 
-    console.log("ERRO TEST MARKET:", error);
+    console.log("ERRO TEST MARKET:", error.message);
 
     res.status(500).json({
-      error: "Falha ao acessar API externa",
+      error: "Erro ao acessar API Binance",
       message: error.message
     });
 
