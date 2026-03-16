@@ -5,14 +5,17 @@ console.log("INICIANDO SERVIDOR...");
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
+const axios = require("axios");
 
 const { scanOpportunities } = require("./src/ai/opportunityHunter");
 const { getMarketData } = require("./src/mercado/marketScanner");
 
 const authRoutes = require("./src/routes/auth.routes");
 const portfolioRoutes = require("./src/routes/portfolio.routes");
+const aiRoutes = require("./src/routes/ai.routes");
+
 const authMiddleware = require("./src/middleware/auth.middleware");
-const aiRoutes = require("./src/routes/ai.routes")
+
 const app = express();
 
 app.use(cors());
@@ -20,9 +23,22 @@ app.use(express.json());
 
 app.use("/auth", authRoutes);
 app.use("/portfolio", portfolioRoutes);
-app.use("/ai", aiRoutes)
+app.use("/ai", aiRoutes);
 
 let lastOpportunities = [];
+
+
+// =====================================
+// ROTAS BÁSICAS
+// =====================================
+
+app.get("/", (req, res) => {
+  res.send("Servidor funcionando");
+});
+
+app.get("/health", (req, res) => {
+  res.json({ status: "ok" });
+});
 
 app.get("/dashboard", authMiddleware, (req, res) => {
   res.json({
@@ -31,16 +47,57 @@ app.get("/dashboard", authMiddleware, (req, res) => {
   });
 });
 
-app.get("/health", (req,res)=>{
- res.json({status:"ok"})
-})
 
-const PORT = process.env.PORT || 3000;
+// =====================================
+// TESTE DE API DO MERCADO
+// =====================================
+
+app.get("/test-market", async (req, res) => {
+
+  try {
+
+    const response = await axios.get(
+      "https://api.coingecko.com/api/v3/coins/markets",
+      {
+        params: {
+          vs_currency: "usd",
+          order: "market_cap_desc",
+          per_page: 5,
+          page: 1,
+          sparkline: false
+        }
+      }
+    );
+
+    res.json(response.data);
+
+  } catch (error) {
+
+    console.log("ERRO TEST MARKET:", error.message);
+
+    res.status(500).json({
+      error: "Erro ao acessar CoinGecko"
+    });
+
+  }
+
+});
+
+
+// =====================================
+// ROTA DE OPORTUNIDADES IA
+// =====================================
+
+app.get("/ai/opportunities", authMiddleware, (req, res) => {
+  res.json(lastOpportunities);
+});
 
 
 // =====================================
 // INICIALIZAÇÃO
 // =====================================
+
+const PORT = process.env.PORT || 3000;
 
 async function startServer() {
 
@@ -76,7 +133,6 @@ async function startServer() {
     }, 120000);
 
 
-
     // =============================
     // MARKET SCANNER
     // =============================
@@ -98,20 +154,9 @@ async function startServer() {
     }, 180000);
 
 
-
     // =============================
-    // ROTAS
+    // START SERVIDOR
     // =============================
-
-    app.get("/", (req, res) => {
-      res.send("Servidor funcionando");
-    });
-
-    app.get("/ai/opportunities", authMiddleware, (req, res) => {
-      res.json(lastOpportunities);
-    });
-
-
 
     app.listen(PORT, () => {
       console.log(`Servidor rodando na porta ${PORT}`);
