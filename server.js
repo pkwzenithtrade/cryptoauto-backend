@@ -48,7 +48,7 @@ app.get("/dashboard", authMiddleware, (req, res) => {
 });
 
 // =====================================
-// TESTE DE API DO MERCADO
+// TESTE DE API DO MERCADO (FONTE SEGURA)
 // =====================================
 
 app.get("/test-market", async (req, res) => {
@@ -58,7 +58,7 @@ app.get("/test-market", async (req, res) => {
     const axios = require("axios");
 
     const response = await axios.get(
-      "https://api.binance.com/api/v3/ticker/price"
+      "https://raw.githubusercontent.com/vega/vega-datasets/master/data/stocks.json"
     );
 
     res.json(response.data.slice(0,10));
@@ -68,7 +68,7 @@ app.get("/test-market", async (req, res) => {
     console.log("ERRO TEST MARKET:", error.message);
 
     res.status(500).json({
-      error: "Erro ao acessar API Binance",
+      error: "Erro ao acessar dados externos",
       message: error.message
     });
 
