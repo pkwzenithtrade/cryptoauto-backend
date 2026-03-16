@@ -48,7 +48,7 @@ app.get("/dashboard", authMiddleware, (req, res) => {
 });
 
 // =====================================
-// TESTE DE API DO MERCADO (FONTE SEGURA)
+// TESTE DE API DO MERCADO
 // =====================================
 
 app.get("/test-market", async (req, res) => {
@@ -58,17 +58,17 @@ app.get("/test-market", async (req, res) => {
     const axios = require("axios");
 
     const response = await axios.get(
-      "https://raw.githubusercontent.com/vega/vega-datasets/master/data/stocks.json"
+      "https://api.kraken.com/0/public/Ticker?pair=BTCUSD,ETHUSD"
     );
 
-    res.json(response.data.slice(0,10));
+    res.json(response.data);
 
   } catch (error) {
 
     console.log("ERRO TEST MARKET:", error.message);
 
     res.status(500).json({
-      error: "Erro ao acessar dados externos",
+      error: "Erro ao acessar API Kraken",
       message: error.message
     });
 
