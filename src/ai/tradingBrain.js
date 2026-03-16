@@ -6,21 +6,21 @@ async function tradingBrain() {
 
   const url = "https://api.coingecko.com/api/v3/coins/markets"
 
-  const response = await axios.get(url, {
-   params: {
-    vs_currency: "usd",
-    order: "market_cap_desc",
-    per_page: 20,
-    page: 1,
-    sparkline: false
+  const response = await axios.get(url,{
+   params:{
+    vs_currency:"usd",
+    order:"market_cap_desc",
+    per_page:20,
+    page:1,
+    sparkline:false
    }
   })
 
-  const coins = response.data
+  const coins = response.data || []
 
   let brain = []
 
-  for (const coin of coins) {
+  for(const coin of coins){
 
    const price = coin.current_price || 0
    const change24h = coin.price_change_percentage_24h || 0
@@ -29,39 +29,40 @@ async function tradingBrain() {
    let decision = "HOLD"
    let score = 20
 
-   if (change24h > 5 && volume > 500000000) {
-
+   if(change24h > 4){
     decision = "BUY"
     score = 40
-
    }
 
-   if (change24h < -5) {
+   if(change24h > 8){
+    decision = "STRONG BUY"
+    score = 80
+   }
 
+   if(change24h < -6){
     decision = "SELL"
-    score = 40
-
+    score = 60
    }
 
    brain.push({
     coin: coin.id,
     name: coin.name,
-    price: Number(price),
-    change24h: Number(change24h),
-    volume: Number(volume),
-    score: Number(score),
+    price,
+    change24h,
+    volume,
+    score,
     decision
    })
 
   }
 
-  brain.sort((a,b)=> b.score - a.score)
+  brain.sort((a,b)=>b.score-a.score)
 
   return brain
 
- } catch (error) {
+ } catch(error){
 
-  console.log("Erro no Trading Brain:", error.message)
+  console.log("Erro Trading Brain:", error.message)
 
   return []
 
@@ -71,4 +72,4 @@ async function tradingBrain() {
 
 module.exports = {
  tradingBrain
-}
+     }
