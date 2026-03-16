@@ -12,7 +12,7 @@ const { getMarketData } = require("./src/mercado/marketScanner");
 const authRoutes = require("./src/routes/auth.routes");
 const portfolioRoutes = require("./src/routes/portfolio.routes");
 const authMiddleware = require("./src/middleware/auth.middleware");
-
+const aiRoutes = require("./src/routes/ai.routes")
 const app = express();
 
 app.use(cors());
@@ -20,6 +20,7 @@ app.use(express.json());
 
 app.use("/auth", authRoutes);
 app.use("/portfolio", portfolioRoutes);
+app.use("/ai", aiRoutes)
 
 let lastOpportunities = [];
 
