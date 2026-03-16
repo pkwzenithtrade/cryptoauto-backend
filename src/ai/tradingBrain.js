@@ -37,16 +37,14 @@ async function runTradingBrain() {
    score = Math.min(score, 100)
 
    brain.push({
-    coin: coin.coin,
-    name: coin.name,
-    price: coin.price,
-    change24h,
-    volume,
-    score,
-    decision
-   })
-
-  }
+ coin: coin.coin || "",
+ name: coin.name || "",
+ price: Number(coin.price || 0),
+ change24h: Number(change24h),
+ volume: Number(volume),
+ score: Number(score),
+ decision
+})
 
   brain.sort((a,b)=>b.score-a.score)
 
