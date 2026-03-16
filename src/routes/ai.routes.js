@@ -1,18 +1,18 @@
 const express = require("express")
 const router = express.Router()
 
-const { runTradingBrain } = require("../ai/tradingBrain")
+const { tradingBrain } = require("../ai/tradingBrain")
 
-// =============================
+// =================================
 // TRADING BRAIN
-// =============================
+// =================================
 router.get("/trading-brain", async (req, res) => {
 
  try {
 
-  const brain = await runTradingBrain()
+  const data = await tradingBrain()
 
-  res.json(brain)
+  res.json(data)
 
  } catch (error) {
 
