@@ -1,20 +1,30 @@
 const axios = require("axios")
 
-async function tradingBrain() {
+let cache = []
+let lastFetch = 0
 
- try {
+async function tradingBrain(){
 
-  const url = "https://api.coingecko.com/api/v3/coins/markets"
+ try{
 
-  const response = await axios.get(url,{
-   params:{
-    vs_currency:"usd",
-    order:"market_cap_desc",
-    per_page:20,
-    page:1,
-    sparkline:false
+  const now = Date.now()
+
+  if(now - lastFetch < 60000 && cache.length > 0){
+   return cache
+  }
+
+  const response = await axios.get(
+   "https://api.coingecko.com/api/v3/coins/markets",
+   {
+    params:{
+     vs_currency:"usd",
+     order:"market_cap_desc",
+     per_page:20,
+     page:1,
+     sparkline:false
+    }
    }
-  })
+  )
 
   const coins = response.data || []
 
@@ -53,18 +63,20 @@ async function tradingBrain() {
     score,
     decision
    })
-
   }
 
   brain.sort((a,b)=>b.score-a.score)
 
+  cache = brain
+  lastFetch = now
+
   return brain
 
- } catch(error){
+ }catch(error){
 
-  console.log("Erro Trading Brain:", error.message)
+  console.log("TradingBrain erro:", error.message)
 
-  return []
+  return cache
 
  }
 
@@ -72,4 +84,4 @@ async function tradingBrain() {
 
 module.exports = {
  tradingBrain
-     }
+}
