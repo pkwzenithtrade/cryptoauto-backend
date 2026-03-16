@@ -1,0 +1,19 @@
+body{
+ font-family:Arial;
+ margin:40px;
+}
+
+.login{
+ margin-bottom:30px;
+}
+
+input{
+ display:block;
+ margin:10px 0;
+ padding:8px;
+}
+
+button{
+ padding:10px 15px;
+ cursor:pointer;
+}
