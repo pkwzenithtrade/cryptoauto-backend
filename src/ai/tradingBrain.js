@@ -1,54 +1,63 @@
-const { scanMarket } = require("./marketRadar")
-const { scanMarketTrends } = require("./trendScanner")
-const { scanOpportunities } = require("./opportunityHunter")
+const axios = require("axios")
 
-async function runTradingBrain() {
+async function tradingBrain() {
 
  try {
 
-  const market = await scanMarket(50) || []
-  const trends = await scanMarketTrends(50) || []
-  const signals = await scanOpportunities() || []
+  const url = "https://api.coingecko.com/api/v3/coins/markets"
+
+  const response = await axios.get(url, {
+   params: {
+    vs_currency: "usd",
+    order: "market_cap_desc",
+    per_page: 20,
+    page: 1,
+    sparkline: false
+   }
+  })
+
+  const coins = response.data
 
   let brain = []
 
-  for (const coin of market) {
+  for (const coin of coins) {
 
-   const trend = trends.find(t => t.coin === coin.coin)
-   const signal = signals.find(s => s.coin === coin.coin)
+   const price = coin.current_price || 0
+   const change24h = coin.price_change_percentage_24h || 0
+   const volume = coin.total_volume || 0
 
-   let score = 0
    let decision = "HOLD"
+   let score = 20
 
-   const change24h = coin.change24h || 0
-   const volume = coin.volume || 0
+   if (change24h > 5 && volume > 500000000) {
 
-   if (change24h > 4) score += 20
+    decision = "BUY"
+    score = 40
 
-   if (volume > 100000000) score += 20
+   }
 
-   if (trend && trend.signal === "BUY") score += 30
+   if (change24h < -5) {
 
-   if (signal && signal.signal === "BUY") score += 30
+    decision = "SELL"
+    score = 40
 
-   if (score >= 60) decision = "STRONG BUY"
-   else if (score >= 40) decision = "BUY"
-
-   score = Math.min(score, 100)
+   }
 
    brain.push({
- coin: coin.coin || "",
- name: coin.name || "",
- price: Number(coin.price || 0),
- change24h: Number(change24h),
- volume: Number(volume),
- score: Number(score),
- decision
-})
+    coin: coin.id,
+    name: coin.name,
+    price: Number(price),
+    change24h: Number(change24h),
+    volume: Number(volume),
+    score: Number(score),
+    decision
+   })
 
-  brain.sort((a,b)=>b.score-a.score)
+  }
 
-  return brain.slice(0,20)
+  brain.sort((a,b)=> b.score - a.score)
+
+  return brain
 
  } catch (error) {
 
@@ -61,5 +70,5 @@ async function runTradingBrain() {
 }
 
 module.exports = {
- runTradingBrain
+ tradingBrain
 }
