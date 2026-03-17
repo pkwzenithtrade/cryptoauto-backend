@@ -12,30 +12,46 @@ const COINS_CONFIG = {
 };
 
 
-// BUSCAR PREÇOS DA KRAKEN
+// BUSCAR PREÇOS DA KRAKEN (COM PROTEÇÃO)
 async function getMarketPrices() {
+  try {
+    const response = await axios.get(
+      "https://api.kraken.com/0/public/Ticker?pair=BTCUSD,ETHUSD,SOLUSD,LINKUSD,AVAXUSD,MATICUSD,DOTUSD"
+    );
 
-  const response = await axios.get(
-    "https://api.kraken.com/0/public/Ticker?pair=BTCUSD,ETHUSD,SOLUSD,LINKUSD,AVAXUSD,MATICUSD,DOTUSD"
-  );
+    const data = response.data?.result || {};
 
-  const data = response.data.result;
+    return {
+      BTC: Number(data.XXBTZUSD?.c?.[0]) || 0,
+      ETH: Number(data.XETHZUSD?.c?.[0]) || 0,
+      SOL: Number(data.SOLUSD?.c?.[0]) || 0,
+      LINK: Number(data.LINKUSD?.c?.[0]) || 0,
+      AVAX: Number(data.AVAXUSD?.c?.[0]) || 0,
+      MATIC: Number(data.MATICUSD?.c?.[0]) || 0,
+      DOT: Number(data.DOTUSD?.c?.[0]) || 0
+    };
 
-  return {
-    BTC: parseFloat(data.XXBTZUSD?.c[0] || 0),
-    ETH: parseFloat(data.XETHZUSD?.c[0] || 0),
-    SOL: parseFloat(data.SOLUSD?.c[0] || 0),
-    LINK: parseFloat(data.LINKUSD?.c[0] || 0),
-    AVAX: parseFloat(data.AVAXUSD?.c[0] || 0),
-    MATIC: parseFloat(data.MATICUSD?.c[0] || 0),
-    DOT: parseFloat(data.DOTUSD?.c[0] || 0)
-  };
+  } catch (error) {
+    console.log("Erro ao buscar preços:", error.message);
 
+    // fallback seguro (evita quebrar o sistema)
+    return {
+      BTC: 0,
+      ETH: 0,
+      SOL: 0,
+      LINK: 0,
+      AVAX: 0,
+      MATIC: 0,
+      DOT: 0
+    };
+  }
 }
 
 
 // CALCULAR SCORE
 function calculateScore(price, buyBelow, sellAbove) {
+
+  if (!price || isNaN(price)) return 0;
 
   if (price < buyBelow) {
     return ((buyBelow - price) / buyBelow) * 100;
@@ -46,7 +62,6 @@ function calculateScore(price, buyBelow, sellAbove) {
   }
 
   return 0;
-
 }
 
 
@@ -62,15 +77,15 @@ async function scanOpportunities() {
     for (const coin in COINS_CONFIG) {
 
       const rules = COINS_CONFIG[coin];
-
       const price = prices[coin];
 
-      if (!price) continue;
+      // ignora dados inválidos
+      if (!price || isNaN(price)) continue;
 
       let signal = "HOLD";
 
       if (price < rules.buyBelow) signal = "BUY";
-      if (price > rules.sellAbove) signal = "SELL";
+      else if (price > rules.sellAbove) signal = "SELL";
 
       const score = calculateScore(
         price,
@@ -81,11 +96,11 @@ async function scanOpportunities() {
       if (score > 1) {
 
         opportunities.push({
-          coin,
+          coin: coin,
           name: rules.name,
-          price,
-          signal,
-          confidence: Math.min(score + 50, 95),
+          price: Number(price),
+          signal: signal,
+          confidence: Number(Math.min(score + 50, 95).toFixed(2)),
           score: Number(score.toFixed(2))
         });
 
@@ -93,9 +108,18 @@ async function scanOpportunities() {
 
     }
 
-    opportunities.sort((a, b) => b.score - a.score);
+    // LIMPEZA FINAL (anti-bug)
+    const cleanOpportunities = opportunities.filter(
+      o =>
+        o &&
+        o.coin &&
+        typeof o.price === "number" &&
+        !isNaN(o.price)
+    );
 
-    return opportunities.slice(0, 5);
+    cleanOpportunities.sort((a, b) => b.score - a.score);
+
+    return cleanOpportunities.slice(0, 5);
 
   } catch (error) {
 
