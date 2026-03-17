@@ -1,18 +1,30 @@
-const { getMultiplePrices } = require("../services/crypto.service");
+const axios = require("axios");
 
 // CONFIGURAÇÃO DAS MOEDAS
 const COINS_CONFIG = {
-  bitcoin: { name: "Bitcoin", buyBelow: 30000, sellAbove: 70000 },
-  ethereum: { name: "Ethereum", buyBelow: 1500, sellAbove: 4000 },
-  solana: { name: "Solana", buyBelow: 80, sellAbove: 250 },
-  "avalanche-2": { name: "Avalanche", buyBelow: 20, sellAbove: 80 },
-  chainlink: { name: "Chainlink", buyBelow: 10, sellAbove: 35 },
-  "matic-network": { name: "Polygon", buyBelow: 0.5, sellAbove: 2 },
-  polkadot: { name: "Polkadot", buyBelow: 5, sellAbove: 25 }
+  BTC: { name: "Bitcoin", buyBelow: 30000, sellAbove: 70000 },
+  ETH: { name: "Ethereum", buyBelow: 1500, sellAbove: 4000 }
 };
 
 
-// CALCULA SCORE
+// BUSCAR PREÇOS DA KRAKEN
+async function getMarketPrices() {
+
+  const response = await axios.get(
+    "https://api.kraken.com/0/public/Ticker?pair=BTCUSD,ETHUSD"
+  );
+
+  const data = response.data.result;
+
+  return {
+    BTC: parseFloat(data.XXBTZUSD.c[0]),
+    ETH: parseFloat(data.XETHZUSD.c[0])
+  };
+
+}
+
+
+// CALCULAR SCORE
 function calculateScore(price, buyBelow, sellAbove) {
 
   if (price < buyBelow) {
@@ -33,49 +45,39 @@ async function scanOpportunities() {
 
   try {
 
+    const prices = await getMarketPrices();
+
     const opportunities = [];
 
-    const prices = await getMultiplePrices();
+    for (const coin in COINS_CONFIG) {
 
-    const coins = Object.keys(COINS_CONFIG);
+      const rules = COINS_CONFIG[coin];
 
-    for (const coin of coins) {
+      const price = prices[coin];
 
-      try {
+      if (!price) continue;
 
-        const price = prices?.[coin]?.usd;
+      let signal = "HOLD";
 
-        if (!price) continue;
+      if (price < rules.buyBelow) signal = "BUY";
+      if (price > rules.sellAbove) signal = "SELL";
 
-        const rules = COINS_CONFIG[coin];
+      const score = calculateScore(
+        price,
+        rules.buyBelow,
+        rules.sellAbove
+      );
 
-        let signal = "HOLD";
+      if (score > 0) {
 
-        if (price < rules.buyBelow) signal = "BUY";
-        if (price > rules.sellAbove) signal = "SELL";
-
-        const score = calculateScore(
+        opportunities.push({
+          coin,
+          name: rules.name,
           price,
-          rules.buyBelow,
-          rules.sellAbove
-        );
-
-        if (score > 0) {
-
-          opportunities.push({
-            coin,
-            name: rules.name,
-            price,
-            signal,
-            confidence: Math.min(score + 50, 95),
-            score: Number(score.toFixed(2))
-          });
-
-        }
-
-      } catch (coinError) {
-
-        console.log(`Erro ao analisar ${coin}:`, coinError.message);
+          signal,
+          confidence: Math.min(score + 50, 95),
+          score: Number(score.toFixed(2))
+        });
 
       }
 
