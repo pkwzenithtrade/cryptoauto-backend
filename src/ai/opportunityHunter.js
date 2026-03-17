@@ -34,7 +34,6 @@ async function getMarketPrices() {
   } catch (error) {
     console.log("Erro ao buscar preços:", error.message);
 
-    // fallback seguro
     return {
       BTC: 0,
       ETH: 0,
@@ -73,7 +72,7 @@ async function scanOpportunities() {
     const prices = await getMarketPrices();
     const opportunities = [];
 
-    // 🔥 DETECTAR TENDÊNCIA DO BTC (GLOBAL MARKET)
+    // 🔥 DETECTAR TENDÊNCIA DO BTC
     const btcPrice = prices.BTC;
     const btcRules = COINS_CONFIG.BTC;
 
@@ -87,13 +86,17 @@ async function scanOpportunities() {
       const rules = COINS_CONFIG[coin];
       const price = prices[coin];
 
-      // ignora dados inválidos
       if (!price || isNaN(price)) continue;
 
       let signal = "HOLD";
 
       if (price < rules.buyBelow) signal = "BUY";
       else if (price > rules.sellAbove) signal = "SELL";
+
+      // 🚨 BLOQUEIO INTELIGENTE (ANTI-PREJUÍZO)
+      if (btcTrend === "SELL" && signal === "BUY" && coin !== "BTC") {
+        signal = "HOLD";
+      }
 
       const score = calculateScore(
         price,
@@ -103,16 +106,14 @@ async function scanOpportunities() {
 
       if (score > 1) {
 
-        // 🔥 BASE DE CONFIANÇA
         let confidence = Math.min(score + 50, 95);
 
-        // 🔥 AJUSTE INTELIGENTE BASEADO NO BTC
         if (btcTrend === "SELL" && coin !== "BTC") {
-          confidence *= 0.7; // reduz força das altcoins
+          confidence *= 0.7;
         }
 
         if (btcTrend === "BUY" && coin !== "BTC") {
-          confidence *= 1.1; // aumenta força das altcoins
+          confidence *= 1.1;
         }
 
         confidence = Number(confidence.toFixed(2));
@@ -130,7 +131,6 @@ async function scanOpportunities() {
 
     }
 
-    // LIMPEZA FINAL
     const cleanOpportunities = opportunities.filter(
       o =>
         o &&
