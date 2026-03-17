@@ -27,6 +27,13 @@ app.use("/ai", aiRoutes);
 
 let lastOpportunities = [];
 
+// =====================================
+// ROTA PÚBLICA (SEM TOKEN)
+// =====================================
+
+app.get("/ai/opportunities-public", (req, res) => {
+  res.json(lastOpportunities);
+});
 
 // =====================================
 // ROTAS BÁSICAS
