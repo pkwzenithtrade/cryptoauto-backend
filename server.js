@@ -8,7 +8,6 @@ const mongoose = require("mongoose");
 const axios = require("axios");
 
 const { scanOpportunities } = require("./src/ai/opportunityHunter");
-const { getMarketData } = require("./src/mercado/marketScanner");
 
 const authRoutes = require("./src/routes/auth.routes");
 const portfolioRoutes = require("./src/routes/portfolio.routes");
@@ -144,27 +143,6 @@ async function startServer() {
       }
 
     }, 120000);
-
-
-    // =============================
-    // MARKET SCANNER
-    // =============================
-
-    setInterval(async () => {
-
-      try {
-
-        const market = await getMarketData();
-
-        console.log("Mercado atualizado:", market);
-
-      } catch (error) {
-
-        console.error("Erro ao atualizar mercado:", error.message);
-
-      }
-
-    }, 180000);
 
 
     // =============================
