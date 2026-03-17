@@ -62,7 +62,6 @@ app.get("/test-market", async (req, res) => {
 
   try {
 
-    const axios = require("axios");
 
     const response = await axios.get(
       "https://api.kraken.com/0/public/Ticker?pair=BTCUSD,ETHUSD"
