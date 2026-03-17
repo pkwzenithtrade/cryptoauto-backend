@@ -61,7 +61,20 @@ app.get("/test-market", async (req, res) => {
       "https://api.kraken.com/0/public/Ticker?pair=BTCUSD,ETHUSD"
     );
 
-    res.json(response.data);
+    const data = response.data.result;
+
+    const market = [
+      {
+        coin: "BTC",
+        price: parseFloat(data.XXBTZUSD.c[0])
+      },
+      {
+        coin: "ETH",
+        price: parseFloat(data.XETHZUSD.c[0])
+      }
+    ];
+
+    res.json(market);
 
   } catch (error) {
 
