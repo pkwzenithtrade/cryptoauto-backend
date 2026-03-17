@@ -78,7 +78,7 @@ async function scanOpportunities() {
         rules.sellAbove
       );
 
-      if (score > 0) {
+      if (score > 1) {
 
         opportunities.push({
           coin,
@@ -95,7 +95,7 @@ async function scanOpportunities() {
 
     opportunities.sort((a, b) => b.score - a.score);
 
-    return opportunities;
+    return opportunities.slice(0, 5);
 
   } catch (error) {
 
