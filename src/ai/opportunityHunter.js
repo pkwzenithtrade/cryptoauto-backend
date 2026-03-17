@@ -16,14 +16,19 @@ const COINS_CONFIG = {
 async function getMarketPrices() {
 
   const response = await axios.get(
-    "https://api.kraken.com/0/public/Ticker?pair=BTCUSD,ETHUSD"
+    "https://api.kraken.com/0/public/Ticker?pair=BTCUSD,ETHUSD,SOLUSD,LINKUSD,AVAXUSD,MATICUSD,DOTUSD"
   );
 
   const data = response.data.result;
 
   return {
-    BTC: parseFloat(data.XXBTZUSD.c[0]),
-    ETH: parseFloat(data.XETHZUSD.c[0])
+    BTC: parseFloat(data.XXBTZUSD?.c[0] || 0),
+    ETH: parseFloat(data.XETHZUSD?.c[0] || 0),
+    SOL: parseFloat(data.SOLUSD?.c[0] || 0),
+    LINK: parseFloat(data.LINKUSD?.c[0] || 0),
+    AVAX: parseFloat(data.AVAXUSD?.c[0] || 0),
+    MATIC: parseFloat(data.MATICUSD?.c[0] || 0),
+    DOT: parseFloat(data.DOTUSD?.c[0] || 0)
   };
 
 }
