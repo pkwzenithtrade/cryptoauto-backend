@@ -32,7 +32,15 @@ let lastOpportunities = [];
 // =====================================
 
 app.get("/ai/opportunities-public", (req, res) => {
-  res.json(lastOpportunities);
+
+  const limited = lastOpportunities.slice(0, 2); // só 2 sinais
+
+  res.json({
+    message: "🔒 Versão gratuita limitada",
+    data: limited,
+    upgrade: "Acesse o VIP para sinais completos"
+  });
+
 });
 
 // =====================================
