@@ -8,6 +8,7 @@ const mongoose = require("mongoose");
 const axios = require("axios");
 
 const { scanOpportunities } = require("./src/ai/opportunityHunter");
+const { sendMessage, formatOpportunities } = require("./src/services/telegram.service");
 
 const authRoutes = require("./src/routes/auth.routes");
 const portfolioRoutes = require("./src/routes/portfolio.routes");
@@ -25,30 +26,6 @@ app.use("/portfolio", portfolioRoutes);
 app.use("/ai", aiRoutes);
 
 let lastOpportunities = [];
-
-// =====================================
-// CONFIG TELEGRAM
-// =====================================
-
-const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
-const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
-
-async function sendTelegramMessage(message) {
-  try {
-    if (!TELEGRAM_TOKEN || !TELEGRAM_CHAT_ID) return;
-
-    await axios.post(
-      `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`,
-      {
-        chat_id: TELEGRAM_CHAT_ID,
-        text: message
-      }
-    );
-
-  } catch (error) {
-    console.log("Erro Telegram:", error.message);
-  }
-}
 
 // =====================================
 // ROTA PÚBLICA
@@ -78,11 +55,10 @@ app.get("/dashboard", authMiddleware, (req, res) => {
 });
 
 // =====================================
-// TESTE DE MERCADO
+// TESTE DE MERCADO (KRAKEN)
 // =====================================
 
 app.get("/test-market", async (req, res) => {
-
   try {
 
     const response = await axios.get(
@@ -114,11 +90,10 @@ app.get("/test-market", async (req, res) => {
     });
 
   }
-
 });
 
 // =====================================
-// ROTA PROTEGIDA
+// ROTA PRIVADA IA
 // =====================================
 
 app.get("/ai/opportunities", authMiddleware, (req, res) => {
@@ -143,6 +118,7 @@ async function startServer() {
 
     lastOpportunities = await scanOpportunities();
 
+    // 🔥 LOOP PRINCIPAL COM TELEGRAM
     setInterval(async () => {
 
       try {
@@ -152,33 +128,21 @@ async function startServer() {
         // 🔥 DETECTA MUDANÇA
         if (JSON.stringify(newData) !== JSON.stringify(lastOpportunities)) {
 
-          console.log("NOVA OPORTUNIDADE DETECTADA");
+          lastOpportunities = newData;
 
-          // 🔥 ENVIA PRO TELEGRAM
-          for (const op of newData) {
+          console.log("NOVAS OPORTUNIDADES:", newData);
 
-            const message = `
-🚀 NOVA OPORTUNIDADE
+          // ✅ USA FORMATADOR CORRETO
+          const message = formatOpportunities(newData);
 
-Moeda: ${op.name} (${op.coin})
-Preço: $${op.price}
-Sinal: ${op.signal}
-Confiança: ${op.confidence}%
-Score: ${op.score}
-            `;
-
-            await sendTelegramMessage(message);
-          }
+          // ✅ ENVIA TELEGRAM CORRETO
+          await sendMessage(message);
 
         }
 
-        lastOpportunities = newData;
-
-        console.log("OPORTUNIDADES IA:", lastOpportunities);
-
       } catch (error) {
 
-        console.error("Erro no Opportunity Hunter:", error.message);
+        console.error("Erro no scanner:", error.message);
 
       }
 
