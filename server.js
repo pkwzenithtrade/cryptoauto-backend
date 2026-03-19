@@ -27,7 +27,31 @@ app.use("/ai", aiRoutes);
 let lastOpportunities = [];
 
 // =====================================
-// ROTA PÚBLICA (SEM TOKEN)
+// CONFIG TELEGRAM
+// =====================================
+
+const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+
+async function sendTelegramMessage(message) {
+  try {
+    if (!TELEGRAM_TOKEN || !TELEGRAM_CHAT_ID) return;
+
+    await axios.post(
+      `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`,
+      {
+        chat_id: TELEGRAM_CHAT_ID,
+        text: message
+      }
+    );
+
+  } catch (error) {
+    console.log("Erro Telegram:", error.message);
+  }
+}
+
+// =====================================
+// ROTA PÚBLICA
 // =====================================
 
 app.get("/ai/opportunities-public", (req, res) => {
@@ -54,13 +78,12 @@ app.get("/dashboard", authMiddleware, (req, res) => {
 });
 
 // =====================================
-// TESTE DE API DO MERCADO
+// TESTE DE MERCADO
 // =====================================
 
 app.get("/test-market", async (req, res) => {
 
   try {
-
 
     const response = await axios.get(
       "https://api.kraken.com/0/public/Ticker?pair=BTCUSD,ETHUSD"
@@ -94,16 +117,13 @@ app.get("/test-market", async (req, res) => {
 
 });
 
-
-
 // =====================================
-// ROTA DE OPORTUNIDADES IA
+// ROTA PROTEGIDA
 // =====================================
 
 app.get("/ai/opportunities", authMiddleware, (req, res) => {
   res.json(lastOpportunities);
 });
-
 
 // =====================================
 // INICIALIZAÇÃO
@@ -119,11 +139,6 @@ async function startServer() {
 
     console.log("MongoDB conectado");
 
-
-    // =============================
-    // IA SCANNER
-    // =============================
-
     console.log("AI Scanner iniciado");
 
     lastOpportunities = await scanOpportunities();
@@ -132,7 +147,32 @@ async function startServer() {
 
       try {
 
-        lastOpportunities = await scanOpportunities();
+        const newData = await scanOpportunities();
+
+        // 🔥 DETECTA MUDANÇA
+        if (JSON.stringify(newData) !== JSON.stringify(lastOpportunities)) {
+
+          console.log("NOVA OPORTUNIDADE DETECTADA");
+
+          // 🔥 ENVIA PRO TELEGRAM
+          for (const op of newData) {
+
+            const message = `
+🚀 NOVA OPORTUNIDADE
+
+Moeda: ${op.name} (${op.coin})
+Preço: $${op.price}
+Sinal: ${op.signal}
+Confiança: ${op.confidence}%
+Score: ${op.score}
+            `;
+
+            await sendTelegramMessage(message);
+          }
+
+        }
+
+        lastOpportunities = newData;
 
         console.log("OPORTUNIDADES IA:", lastOpportunities);
 
@@ -143,11 +183,6 @@ async function startServer() {
       }
 
     }, 120000);
-
-
-    // =============================
-    // START SERVIDOR
-    // =============================
 
     app.listen(PORT, () => {
       console.log(`Servidor rodando na porta ${PORT}`);
