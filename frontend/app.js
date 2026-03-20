@@ -1,7 +1,8 @@
 const API = "https://cryptoauto-backend.onrender.com"
 
-let token = null
-
+// ===============================
+// LOGIN
+// ===============================
 async function login(){
 
  const email = document.getElementById("email").value
@@ -20,43 +21,61 @@ async function login(){
 
  const data = await response.json()
 
- token = data.token
+ if(!data.token){
+   alert("Erro no login")
+   return
+ }
 
  alert("Login realizado")
 
 }
 
-// 🔥 FUNÇÃO CORRIGIDA
+
+// ===============================
+// OPORTUNIDADES (CORRIGIDO)
+// ===============================
 async function loadOpportunities(){
 
  try {
 
   const response = await fetch(API + "/ai/opportunities-public")
 
-  const data = await response.json()
+  const json = await response.json()
+
+  console.log("API RESPONSE:", json)
 
   const results = document.getElementById("results")
 
   results.innerHTML = ""
 
-  // 🔥 AGORA PEGAMOS data.data (array correto)
-  const coins = data.data || []
+  const coins = json.data || []
 
+  // 🔥 MOSTRA MENSAGEM DO BACKEND
+  if(json.message){
+    const msg = document.createElement("p")
+    msg.innerHTML = `<b>${json.message}</b>`
+    results.appendChild(msg)
+  }
+
+  // 🔥 SE NÃO TEM DADOS
   if(coins.length === 0){
-    results.innerHTML = "<p>Nenhum dado disponível</p>"
+    const empty = document.createElement("p")
+    empty.innerText = "Nenhum dado disponível"
+    results.appendChild(empty)
     return
   }
 
+  // 🔥 LOOP CORRETO
   coins.forEach(coin => {
 
     const div = document.createElement("div")
 
     div.innerHTML = `
-      <b>${coin.name}</b><br>
+      <b>${coin.name} (${coin.coin})</b><br>
       Preço: $${coin.price}<br>
       Sinal: ${coin.signal}<br>
       Confiança: ${coin.confidence}%<br>
-      Score: ${coin.score}
+      Score: ${coin.score}<br>
       <hr>
     `
 
@@ -64,9 +83,19 @@ async function loadOpportunities(){
 
   })
 
+  // 🔥 UPGRADE
+  if(json.upgrade){
+    const up = document.createElement("p")
+    up.innerHTML = `<b style="color:red">${json.upgrade}</b>`
+    results.appendChild(up)
+  }
+
  } catch (error) {
 
-  console.log("Erro ao carregar:", error)
+  console.log("ERRO:", error)
+
+  const results = document.getElementById("results")
+  results.innerHTML = "<p>Erro ao carregar dados</p>"
 
  }
 
