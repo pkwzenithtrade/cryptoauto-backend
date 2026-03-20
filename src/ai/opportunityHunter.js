@@ -15,8 +15,10 @@ const COINS_CONFIG = {
 // BUSCAR PREÇOS DA KRAKEN (COM PROTEÇÃO)
 async function getMarketPrices() {
   try {
+
     const response = await axios.get(
-      "https://api.kraken.com/0/public/Ticker?pair=BTCUSD,ETHUSD,SOLUSD,LINKUSD,AVAXUSD,MATICUSD,DOTUSD"
+      "https://api.kraken.com/0/public/Ticker?pair=BTCUSD,ETHUSD,SOLUSD,LINKUSD,AVAXUSD,MATICUSD,DOTUSD",
+      { timeout: 5000 }
     );
 
     const data = response.data?.result || {};
@@ -32,17 +34,11 @@ async function getMarketPrices() {
     };
 
   } catch (error) {
+
     console.log("Erro ao buscar preços:", error.message);
 
-    return {
-      BTC: 0,
-      ETH: 0,
-      SOL: 0,
-      LINK: 0,
-      AVAX: 0,
-      MATIC: 0,
-      DOT: 0
-    };
+    return null; // 🔥 MUDANÇA IMPORTANTE
+
   }
 }
 
@@ -70,9 +66,24 @@ async function scanOpportunities() {
   try {
 
     const prices = await getMarketPrices();
+
+    // 🔥 FALLBACK SE API FALHAR
+    if (!prices) {
+      return [
+        {
+          coin: "BTC",
+          name: "Bitcoin",
+          price: 70000,
+          signal: "HOLD",
+          confidence: 50,
+          score: 0
+        }
+      ];
+    }
+
     const opportunities = [];
 
-    // 🔥 DETECTAR TENDÊNCIA DO BTC
+    // 🔥 TENDÊNCIA DO BTC
     const btcPrice = prices.BTC;
     const btcRules = COINS_CONFIG.BTC;
 
@@ -93,61 +104,68 @@ async function scanOpportunities() {
       if (price < rules.buyBelow) signal = "BUY";
       else if (price > rules.sellAbove) signal = "SELL";
 
-      // 🚨 BLOQUEIO INTELIGENTE (ANTI-PREJUÍZO)
+      // 🔥 BLOQUEIO INTELIGENTE
       if (btcTrend === "SELL" && signal === "BUY" && coin !== "BTC") {
         signal = "HOLD";
       }
 
-      const score = calculateScore(
-        price,
-        rules.buyBelow,
-        rules.sellAbove
-      );
+      const score = calculateScore(price, rules.buyBelow, rules.sellAbove);
 
-      if (score > 1) {
+      let confidence = Math.min(score + 50, 95);
 
-        let confidence = Math.min(score + 50, 95);
-
-        if (btcTrend === "SELL" && coin !== "BTC") {
-          confidence *= 0.7;
-        }
-
-        if (btcTrend === "BUY" && coin !== "BTC") {
-          confidence *= 1.1;
-        }
-
-        confidence = Number(confidence.toFixed(2));
-
-        opportunities.push({
-          coin: coin,
-          name: rules.name,
-          price: Number(price),
-          signal: signal,
-          confidence: confidence,
-          score: Number(score.toFixed(2))
-        });
-
+      if (btcTrend === "SELL" && coin !== "BTC") {
+        confidence *= 0.7;
       }
+
+      if (btcTrend === "BUY" && coin !== "BTC") {
+        confidence *= 1.1;
+      }
+
+      confidence = Number(confidence.toFixed(2));
+
+      opportunities.push({
+        coin,
+        name: rules.name,
+        price: Number(price),
+        signal,
+        confidence,
+        score: Number(score.toFixed(2))
+      });
 
     }
 
-    const cleanOpportunities = opportunities.filter(
-      o =>
-        o &&
-        o.coin &&
-        typeof o.price === "number" &&
-        !isNaN(o.price)
-    );
+    // 🔥 GARANTE QUE NUNCA FIQUE VAZIO
+    if (opportunities.length === 0) {
+      return [
+        {
+          coin: "BTC",
+          name: "Bitcoin",
+          price: btcPrice || 70000,
+          signal: "HOLD",
+          confidence: 50,
+          score: 0
+        }
+      ];
+    }
 
-    cleanOpportunities.sort((a, b) => b.score - a.score);
+    opportunities.sort((a, b) => b.score - a.score);
 
-    return cleanOpportunities.slice(0, 5);
+    return opportunities.slice(0, 5);
 
   } catch (error) {
 
     console.log("Erro no Opportunity Hunter:", error.message);
 
-    return [];
+    return [
+      {
+        coin: "BTC",
+        name: "Bitcoin",
+        price: 70000,
+        signal: "HOLD",
+        confidence: 50,
+        score: 0
+      }
+    ];
 
   }
 
