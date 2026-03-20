@@ -1,3 +1,4 @@
+alert("JS carregado")
 const API = "https://cryptoauto-backend.onrender.com"
 
 // ===============================
