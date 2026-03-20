@@ -2,57 +2,110 @@ const API = "https://cryptoauto-backend.onrender.com"
 
 let token = null
 
+// ===============================
+// LOGIN
+// ===============================
 async function login(){
 
- const email = document.getElementById("email").value
- const password = document.getElementById("password").value
+  const email = document.getElementById("email").value
+  const password = document.getElementById("password").value
 
- const response = await fetch(API + "/auth/login",{
+  try {
 
-  method:"POST",
-  headers:{
-   "Content-Type":"application/json"
-  },
+    const response = await fetch(API + "/auth/login",{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json"
+      },
+      body:JSON.stringify({
+        email,
+        password
+      })
+    })
 
-  body:JSON.stringify({
-   email,
-   password
-  })
+    const data = await response.json()
 
- })
+    if(!data.token){
+      alert("Erro no login")
+      return
+    }
 
- const data = await response.json()
+    token = data.token
 
- token = data.token
+    alert("Login realizado com sucesso")
 
- alert("Login realizado")
+  } catch (error) {
+    console.log(error)
+    alert("Erro ao fazer login")
+  }
 
 }
 
+
+// ===============================
+// CARREGAR OPORTUNIDADES (CORRIGIDO)
+// ===============================
 async function loadOpportunities(){
 
- const response = await fetch(API + "/ai/opportunities")
+  try {
 
- const data = await response.json()
+    // 🔥 AGORA USA ROTA PÚBLICA
+    const response = await fetch(API + "/ai/opportunities-public")
 
- const results = document.getElementById("results")
+    const json = await response.json()
 
- results.innerHTML = ""
+    // 🔥 PEGA O ARRAY CORRETO
+    const data = json.data || []
 
- data.forEach(coin => {
+    const results = document.getElementById("results")
 
-  const div = document.createElement("div")
+    results.innerHTML = ""
 
-  div.innerHTML = `
-   <b>${coin.name}</b>
-   Preço: $${coin.price}
-   Sinal: ${coin.signal}
-   Score: ${coin.score}
-   <hr>
-  `
+    // 🔥 SE NÃO TEM DADOS
+    if(data.length === 0){
+      results.innerHTML = "<p>Nenhuma oportunidade encontrada</p>"
+      return
+    }
 
-  results.appendChild(div)
+    // 🔥 MOSTRA MENSAGEM FREE (SE EXISTIR)
+    if(json.message){
+      const msg = document.createElement("p")
+      msg.innerHTML = `<b>${json.message}</b>`
+      results.appendChild(msg)
+    }
 
- })
+    // 🔥 LISTA AS MOEDAS
+    data.forEach(coin => {
+
+      const div = document.createElement("div")
+
+      div.innerHTML = `
+        <b>${coin.name} (${coin.coin})</b><br>
+        Preço: $${coin.price}<br>
+        Sinal: ${coin.signal}<br>
+        Score: ${coin.score}<br>
+        Confiança: ${coin.confidence}%<br>
+        <hr>
+      `
+
+      results.appendChild(div)
+
+    })
+
+    // 🔥 BOTÃO DE UPGRADE
+    if(json.upgrade){
+      const upgrade = document.createElement("p")
+      upgrade.innerHTML = `<b style="color:red">${json.upgrade}</b>`
+      results.appendChild(upgrade)
+    }
+
+  } catch (error) {
+
+    console.log(error)
+
+    const results = document.getElementById("results")
+    results.innerHTML = "<p>Erro ao carregar dados</p>"
+
+  }
 
 }
