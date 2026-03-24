@@ -20,6 +20,7 @@ const portfolioRoutes = require("./src/routes/portfolio.routes");
 const aiRoutes = require("./src/routes/ai.routes");
 const paymentRoutes = require("./src/routes/payment.routes");
 const webhookRoutes = require("./src/routes/webhook.routes");
+const userRoutes = require("./src/routes/user.routes");
 
 // 🔐 MIDDLEWARE
 const authMiddleware = require("./src/middleware/auth.middleware");
@@ -40,6 +41,7 @@ app.use("/portfolio", portfolioRoutes);
 app.use("/ai", aiRoutes);
 app.use("/payment", paymentRoutes);
 app.use("/webhook", webhookRoutes);
+app.use("/user", userRoutes);
 
 let lastOpportunities = [];
 
