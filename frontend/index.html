@@ -46,24 +46,74 @@ button {
 
 <h1>🚀 CryptoAuto AI</h1>
 
+<button onclick="definirEmail()">👤 Entrar</button>
 <button onclick="loadOpportunities()">📊 Buscar sinais</button>
 
 <br>
 
-<!-- 🔥 BOTÃO VIP -->
 <button class="vip" onclick="virarVIP()">🔥 Virar VIP</button>
 
+<div id="status"></div>
 <div id="results">Nenhum dado carregado</div>
 
 <script>
 
 const API = "https://cryptoauto-backend.onrender.com"
 
-// 🔥 SIMULAÇÃO LOCAL (depois vamos ligar com backend)
+let userEmail = localStorage.getItem("email") || null;
 let isVIP = false;
 
 // ===============================
-// 🔥 BUSCAR SINAIS
+// 👤 DEFINIR EMAIL
+// ===============================
+function definirEmail(){
+
+  const email = prompt("Digite seu email:");
+
+  if(!email){
+    alert("Email obrigatório");
+    return;
+  }
+
+  localStorage.setItem("email", email);
+  userEmail = email;
+
+  verificarVIP();
+}
+
+// ===============================
+// 🔒 VERIFICAR VIP REAL
+// ===============================
+async function verificarVIP(){
+
+ if(!userEmail) return;
+
+ try {
+
+  const res = await fetch(
+    API + "/user/status?email=" + encodeURIComponent(userEmail)
+  );
+
+  const data = await res.json();
+
+  isVIP = data.isVIP;
+
+  const status = document.getElementById("status");
+
+  if(isVIP){
+    status.innerHTML = "💎 VIP ATIVO (" + data.plan + ")";
+  } else {
+    status.innerHTML = "🔒 Conta Free";
+  }
+
+ } catch (error) {
+  console.log("Erro ao verificar VIP");
+ }
+
+}
+
+// ===============================
+// 📊 BUSCAR SINAIS
 // ===============================
 async function loadOpportunities(){
 
@@ -98,7 +148,7 @@ async function loadOpportunities(){
 
   });
 
-  // 🔒 BLOQUEIO VIP
+  // 🔒 BLOQUEIO
   if(!isVIP){
 
     const lock = document.createElement("div");
@@ -106,7 +156,7 @@ async function loadOpportunities(){
 
     lock.innerHTML = `
       <div class="lock">🔒 Conteúdo VIP</div>
-      <p>Desbloqueie todos os sinais e aumente seus ganhos</p>
+      <p>Desbloqueie todos os sinais</p>
       <button onclick="virarVIP()">🔥 Assinar agora</button>
     `;
 
@@ -124,17 +174,15 @@ async function loadOpportunities(){
 // ===============================
 async function virarVIP(){
 
- const email = prompt("Digite seu email:");
-
- if(!email){
-  alert("Email obrigatório");
+ if(!userEmail){
+  alert("Defina seu email primeiro");
   return;
  }
 
  try {
 
   const res = await fetch(
-    API + "/payment/boleto?email=" + encodeURIComponent(email)
+    API + "/payment/boleto?email=" + encodeURIComponent(userEmail)
   );
 
   const data = await res.json();
@@ -152,7 +200,7 @@ async function virarVIP(){
       </a>
 
       <br><br>
-      <small>A liberação é automática após pagamento</small>
+      <small>Após pagamento o VIP libera automaticamente</small>
     `;
 
   } else {
@@ -163,6 +211,11 @@ async function virarVIP(){
   alert("Erro ao conectar");
  }
 
+}
+
+// 🔥 AUTO LOGIN
+if(userEmail){
+  verificarVIP();
 }
 
 </script>
