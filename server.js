@@ -6,7 +6,7 @@ const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
 const axios = require("axios");
-
+const User = require("./src/models/user.model");
 const { scanOpportunities } = require("./src/ai/opportunityHunter");
 const { sendMessage, formatOpportunities } = require("./src/services/telegram.service");
 
