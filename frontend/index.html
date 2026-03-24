@@ -13,8 +13,9 @@
 
 <button onclick="loadOpportunities()">Buscar oportunidades</button>
 
-<!-- 🔥 BOTÃO VIP (AQUI) -->
 <br><br>
+
+<!-- 🔥 BOTÃO VIP -->
 <button onclick="virarVIP()">🔥 Virar VIP</button>
 
 <br><br>
@@ -82,21 +83,33 @@ async function virarVIP(){
   const res = await fetch(API + "/payment/boleto")
   const data = await res.json()
 
+  const results = document.getElementById("results")
+
   if(data.boletoUrl){
 
-    alert("Gerando pagamento...")
+    results.innerHTML = `
+      <h3>💰 Pagamento VIP</h3>
+      <p>Clique no botão abaixo para pagar:</p>
 
-    window.open(data.boletoUrl, "_blank")
+      <a href="${data.boletoUrl}" target="_blank">
+        <button>💸 Pagar agora</button>
+      </a>
+
+      <br><br>
+
+      <small>Se não abrir, copie o link:</small><br>
+      ${data.boletoUrl}
+    `
 
   } else {
 
-    alert("Erro ao gerar pagamento")
+    results.innerHTML = "Erro ao gerar pagamento"
 
   }
 
  } catch (error) {
 
-  alert("Erro ao conectar com servidor")
+  document.getElementById("results").innerHTML = "Erro ao conectar com servidor"
 
  }
 
