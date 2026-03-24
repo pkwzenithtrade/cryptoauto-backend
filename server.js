@@ -17,7 +17,9 @@ const aiRoutes = require("./src/routes/ai.routes");
 const authMiddleware = require("./src/middleware/auth.middleware");
 
 const app = express();
+const paymentRoutes = require("./src/routes/payment.routes");
 
+app.use("/payment", paymentRoutes);
 app.use(cors());
 app.use(express.json());
 
