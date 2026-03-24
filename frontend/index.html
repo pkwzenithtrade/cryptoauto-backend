@@ -78,44 +78,40 @@ async function loadOpportunities(){
 // ===============================
 async function virarVIP(){
 
+ const email = prompt("Digite seu email para ativar o VIP:");
+
+ if(!email){
+  alert("Email obrigatório");
+  return;
+ }
+
  try {
 
-  const res = await fetch(API + "/payment/boleto")
-  const data = await res.json()
+  const res = await fetch(API + "/payment/boleto?email=" + email);
+  const data = await res.json();
 
-  const results = document.getElementById("results")
+  const results = document.getElementById("results");
 
   if(data.boletoUrl){
 
     results.innerHTML = `
       <h3>💰 Pagamento VIP</h3>
-      <p>Clique no botão abaixo para pagar:</p>
+      <p>Email: ${data.email}</p>
 
       <a href="${data.boletoUrl}" target="_blank">
         <button>💸 Pagar agora</button>
       </a>
 
       <br><br>
-
-      <small>Se não abrir, copie o link:</small><br>
       ${data.boletoUrl}
-    `
+    `;
 
   } else {
-
-    results.innerHTML = "Erro ao gerar pagamento"
-
+    results.innerHTML = "Erro ao gerar pagamento";
   }
 
  } catch (error) {
-
-  document.getElementById("results").innerHTML = "Erro ao conectar com servidor"
-
+  alert("Erro ao conectar");
  }
 
 }
-
-</script>
-
-</body>
-</html>
