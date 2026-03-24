@@ -17,7 +17,8 @@ async function createCustomer() {
       },
       {
         headers: {
-          access_token: ASAAS_API_KEY
+          access_token: ASAAS_API_KEY,
+          "Content-Type": "application/json"
         }
       }
     );
@@ -25,8 +26,8 @@ async function createCustomer() {
     return response.data;
 
   } catch (error) {
-  console.log("Erro cliente ASAAS:", error.response?.data || error.message);
-  return null;
+    console.log("Erro cliente ASAAS:", error.response?.data || error.message);
+    return null;
   }
 }
 
@@ -42,11 +43,14 @@ async function createPixPayment(customerId) {
         billingType: "PIX",
         value: 19.90,
         description: "CryptoAuto VIP",
-        dueDate: new Date().toISOString().split("T")[0]
+        dueDate: new Date().toISOString().split("T")[0],
+        externalReference: "vip-cryptoauto",
+        postalService: false
       },
       {
         headers: {
-          access_token: ASAAS_API_KEY
+          access_token: ASAAS_API_KEY,
+          "Content-Type": "application/json"
         }
       }
     );
@@ -54,8 +58,11 @@ async function createPixPayment(customerId) {
     return response.data;
 
   } catch (error) {
-    console.log("Erro pagamento:", error.response?.data || error.message);
+
+    console.log("Erro pagamento ASAAS:", error.response?.data || error.message);
+
     return null;
+
   }
 }
 
