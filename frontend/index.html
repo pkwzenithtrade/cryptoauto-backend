@@ -87,7 +87,10 @@ async function virarVIP(){
 
  try {
 
-  const res = await fetch(API + "/payment/boleto?email=" + email);
+  const res = await fetch(
+    API + "/payment/boleto?email=" + encodeURIComponent(email)
+  );
+
   const data = await res.json();
 
   const results = document.getElementById("results");
