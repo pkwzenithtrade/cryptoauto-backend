@@ -14,7 +14,7 @@ const authRoutes = require("./src/routes/auth.routes");
 const portfolioRoutes = require("./src/routes/portfolio.routes");
 const aiRoutes = require("./src/routes/ai.routes");
 const paymentRoutes = require("./src/routes/payment.routes");
-
+const webhookRoutes = require("./src/routes/webhook.routes");
 const authMiddleware = require("./src/middleware/auth.middleware");
 
 const app = express();
@@ -28,7 +28,7 @@ app.use("/auth", authRoutes);
 app.use("/portfolio", portfolioRoutes);
 app.use("/ai", aiRoutes);
 app.use("/payment", paymentRoutes);
-
+app.use("/webhook", webhookRoutes);
 let lastOpportunities = [];
 
 // =====================================
