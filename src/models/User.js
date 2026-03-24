@@ -13,7 +13,12 @@ const userSchema = new mongoose.Schema({
 
   password: {
     type: String,
-    required: true
+    default: null
+  },
+
+  isVIP: {
+    type: Boolean,
+    default: false
   },
 
   plan: {
@@ -24,4 +29,5 @@ const userSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
-module.exports = mongoose.model("User", userSchema);
+// 🔥 CORREÇÃO DO ERRO DO MONGOOSE
+module.exports = mongoose.models.User || mongoose.model("User", userSchema);
