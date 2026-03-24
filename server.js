@@ -8,7 +8,7 @@ const mongoose = require("mongoose");
 const axios = require("axios");
 
 // 🔥 MODELS
-const User = require("./src/models/user.model");
+const User = require("./src/models/User");
 
 // 🔥 SERVICES
 const { scanOpportunities } = require("./src/ai/opportunityHunter");
