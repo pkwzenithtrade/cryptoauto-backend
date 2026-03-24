@@ -4,7 +4,10 @@ const ASAAS_API_KEY = process.env.ASAAS_API_KEY;
 
 const API = "https://api.asaas.com/v3";
 
+// =====================================
 // 🔥 CRIAR CLIENTE
+// =====================================
+
 async function createCustomer() {
   try {
 
@@ -12,7 +15,7 @@ async function createCustomer() {
       API + "/customers",
       {
         name: "Cliente CryptoAuto",
-        email: "teste@cryptoauto.com",
+        email: "cliente@cryptoauto.com",
         cpfCnpj: "11144477735"
       },
       {
@@ -23,16 +26,23 @@ async function createCustomer() {
       }
     );
 
+    console.log("✅ Cliente criado:", response.data);
+
     return response.data;
 
   } catch (error) {
-    console.log("Erro cliente ASAAS:", error.response?.data || error.message);
+
+    console.log("❌ ERRO CLIENTE ASAAS:", error.response?.data || error.message);
+
     return null;
   }
 }
 
 
+// =====================================
 // 🔥 CRIAR PAGAMENTO PIX
+// =====================================
+
 async function createPixPayment(customerId) {
   try {
 
@@ -41,11 +51,9 @@ async function createPixPayment(customerId) {
       {
         customer: customerId,
         billingType: "PIX",
-        value: 19.90,
+        value: 19.9, // 🔥 número simples (evita bug)
         description: "CryptoAuto VIP",
-        dueDate: new Date().toISOString().split("T")[0],
-        externalReference: "vip-cryptoauto",
-        postalService: false
+        dueDate: new Date().toISOString().split("T")[0]
       },
       {
         headers: {
@@ -55,11 +63,13 @@ async function createPixPayment(customerId) {
       }
     );
 
+    console.log("✅ Pagamento criado:", response.data);
+
     return response.data;
 
   } catch (error) {
 
-    console.log("Erro pagamento ASAAS:", error.response?.data || error.message);
+    console.log("❌ ERRO PAGAMENTO ASAAS:", error.response?.data || error.message);
 
     return null;
 
