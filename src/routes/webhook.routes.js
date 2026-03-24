@@ -31,8 +31,15 @@ router.post("/asaas", async (req, res) => {
 
       if (user) {
 
-        user.isVIP = true;
-        await user.save();
+        // 🔥 DEFINIR PLANO AUTOMÁTICO
+user.isVIP = true;
+
+// você pode começar simples:
+user.plan = "premium";
+
+// depois pode variar por valor pago
+await user.save();
+        
 
         console.log("🔥 VIP LIBERADO PARA:", user.email);
 
