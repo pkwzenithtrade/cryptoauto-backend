@@ -30,7 +30,10 @@ router.post("/asaas", async (req, res) => {
       console.log("💰 PAGAMENTO CONFIRMADO:", payment.id);
 
       // 🚀 TEMPORÁRIO: LIBERA VIP PRA TODOS
-      await User.updateMany({}, { isVIP: true });
+      await User.findOneAndUpdate(
+  { email: payment.customerEmail }, // ou campo equivalente
+  { isVIP: true }
+);
 
       console.log("🔥 VIP LIBERADO PARA TODOS");
 
