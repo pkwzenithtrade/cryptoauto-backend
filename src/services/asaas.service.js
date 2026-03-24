@@ -39,6 +39,41 @@ async function createCustomer() {
   }
 }
 
+// =====================================
+// 🔥 CRIAR PAGAMENTO BOLETO
+// =====================================
+
+async function createBoletoPayment(customerId) {
+  try {
+
+    const response = await axios.post(
+      API + "/payments",
+      {
+        customer: customerId,
+        billingType: "BOLETO",
+        value: 19.9,
+        description: "CryptoAuto VIP",
+        dueDate: new Date().toISOString().split("T")[0]
+      },
+      {
+        headers: {
+          access_token: ASAAS_API_KEY,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+
+    console.log("✅ Boleto criado:", response.data.id);
+
+    return response.data;
+
+  } catch (error) {
+
+    console.log("❌ ERRO BOLETO:", error.response?.data || error.message);
+
+    return { error: error.response?.data || error.message };
+  }
+}
 
 // =====================================
 // 🔥 CRIAR PAGAMENTO PIX
