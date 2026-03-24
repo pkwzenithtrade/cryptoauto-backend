@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const User = require("../models/user.model");
 
-// 🔐 TOKEN DO ASAAS (coloque no .env depois)
+// 🔐 TOKEN DO ASAAS
 const ASAAS_WEBHOOK_TOKEN = process.env.ASAAS_WEBHOOK_TOKEN;
 
 // 🔥 WEBHOOK ASAAS
@@ -23,25 +23,16 @@ router.post("/asaas", async (req, res) => {
     console.log("📩 WEBHOOK RECEBIDO:", event);
 
     // 🔥 PAGAMENTO CONFIRMADO
-    
-    if (event.event === "PAYMENT_RECEIVED") {
+    if (event.event === "PAYMENT_RECEIVED" && event.payment) {
 
-  const payment = event.payment;
+      const payment = event.payment;
 
-  console.log("💰 PAGAMENTO CONFIRMADO:", payment.id);
+      console.log("💰 PAGAMENTO CONFIRMADO:", payment.id);
 
-  // 🔥 BUSCAR CLIENTE NO ASAAS
-  const customerId = payment.customer;
+      // 🚀 TEMPORÁRIO: LIBERA VIP PRA TODOS
+      await User.updateMany({}, { isVIP: true });
 
-  // 🚀 ATUALIZA TODOS (TEMPORÁRIO SIMPLES)
-  await User.updateMany({}, { isVIP: true });
-
-  console.log("🔥 VIP LIBERADO");
-    }
-
-      
-      // 🚀 LIBERAR VIP (por enquanto teste)
-      console.log("🔥 LIBERAR VIP PARA USUÁRIO");
+      console.log("🔥 VIP LIBERADO PARA TODOS");
 
     }
 
@@ -49,7 +40,7 @@ router.post("/asaas", async (req, res) => {
 
   } catch (error) {
 
-    console.error("Erro webhook:", error.message);
+    console.error("❌ Erro webhook:", error.message);
 
     res.sendStatus(500);
 
