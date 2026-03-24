@@ -1,7 +1,8 @@
-const User = require("../models/user.model");
 const express = require("express");
 const router = express.Router();
 const axios = require("axios");
+
+const User = require("../models/user.model");
 
 const {
   createCustomer,
@@ -9,77 +10,116 @@ const {
   createBoletoPayment
 } = require("../services/asaas.service");
 
-
 // =====================================
 // 🔥 PIX (quando liberar)
 // =====================================
-
 router.get("/pix", async (req, res) => {
 
-  const customer = await createCustomer();
+  try {
 
-  await User.findOneAndUpdate(
-  { email },
-  { email },
-  { upsert: true, new: true }
-);
-  
-  if (!customer || customer.error) {
-    return res.status(500).json({ error: "Erro cliente", details: customer });
+    const email = req.query.email;
+
+    if (!email) {
+      return res.status(400).json({ error: "Email obrigatório" });
+    }
+
+    // 🔥 SALVA USUÁRIO
+    await User.findOneAndUpdate(
+      { email },
+      { email },
+      { upsert: true, new: true }
+    );
+
+    const customer = await createCustomer(email);
+
+    if (!customer || customer.error) {
+      return res.status(500).json({
+        error: "Erro cliente",
+        details: customer?.error || null
+      });
+    }
+
+    const payment = await createPixPayment(customer.id);
+
+    if (!payment || payment.error) {
+      return res.status(500).json({
+        error: "Erro pagamento PIX",
+        details: payment?.error || null
+      });
+    }
+
+    res.json({
+      paymentId: payment.id,
+      email: email
+    });
+
+  } catch (error) {
+
+    console.error("❌ ERRO PIX:", error.message);
+
+    res.status(500).json({ error: "Erro interno" });
+
   }
-
-  const payment = await createPixPayment(customer.id);
-
-  if (!payment || payment.error) {
-    return res.status(500).json({ error: "Erro pagamento PIX", details: payment });
-  }
-
-  res.json({ paymentId: payment.id });
 
 });
-
 
 // =====================================
 // 🔥 BOLETO (FUNCIONA AGORA)
 // =====================================
-
 router.get("/boleto", async (req, res) => {
 
-  const email = req.query.email;
+  try {
 
-  if (!email) {
-    return res.status(400).json({ error: "Email obrigatório" });
-  }
+    const email = req.query.email;
 
-  const customer = await createCustomer(email);
+    if (!email) {
+      return res.status(400).json({ error: "Email obrigatório" });
+    }
 
-  if (!customer) {
-    return res.status(500).json({ error: "Erro ao criar cliente" });
-  }
+    // 🔥 SALVA USUÁRIO
+    await User.findOneAndUpdate(
+      { email },
+      { email },
+      { upsert: true, new: true }
+    );
 
-  const payment = await createBoletoPayment(customer.id);
+    const customer = await createCustomer(email);
 
-  if (!payment || payment.error) {
-    return res.status(500).json({
-      error: "Erro ao gerar pagamento",
-      details: payment?.error || null
+    if (!customer || customer.error) {
+      return res.status(500).json({
+        error: "Erro ao criar cliente",
+        details: customer?.error || null
+      });
+    }
+
+    const payment = await createBoletoPayment(customer.id);
+
+    if (!payment || payment.error) {
+      return res.status(500).json({
+        error: "Erro ao gerar pagamento",
+        details: payment?.error || null
+      });
+    }
+
+    res.json({
+      paymentId: payment.id,
+      boletoUrl: payment.invoiceUrl,
+      email: email
     });
-  }
 
-  res.json({
-    paymentId: payment.id,
-    boletoUrl: payment.invoiceUrl,
-    email: email
-  });
+  } catch (error) {
+
+    console.error("❌ ERRO BOLETO:", error.message);
+
+    res.status(500).json({ error: "Erro interno" });
+
+  }
 
 });
-
-
 
 // =====================================
 // 🔥 QR PIX
 // =====================================
-
 router.get("/pix/:id", async (req, res) => {
 
   try {
@@ -96,6 +136,8 @@ router.get("/pix/:id", async (req, res) => {
     res.json(response.data);
 
   } catch (error) {
+
+    console.error("❌ ERRO QR PIX:", error.response?.data || error.message);
 
     res.status(500).json({
       error: "Erro QR Code",
