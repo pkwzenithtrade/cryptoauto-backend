@@ -38,24 +38,35 @@ router.get("/pix", async (req, res) => {
 
 router.get("/boleto", async (req, res) => {
 
-  const customer = await createCustomer();
+  const email = req.query.email;
 
-  if (!customer || customer.error) {
-    return res.status(500).json({ error: "Erro cliente", details: customer });
+  if (!email) {
+    return res.status(400).json({ error: "Email obrigatório" });
+  }
+
+  const customer = await createCustomer(email);
+
+  if (!customer) {
+    return res.status(500).json({ error: "Erro ao criar cliente" });
   }
 
   const payment = await createBoletoPayment(customer.id);
 
   if (!payment || payment.error) {
-    return res.status(500).json({ error: "Erro boleto", details: payment });
+    return res.status(500).json({
+      error: "Erro ao gerar pagamento",
+      details: payment?.error || null
+    });
   }
 
   res.json({
     paymentId: payment.id,
-    boletoUrl: payment.invoiceUrl
+    boletoUrl: payment.invoiceUrl,
+    email: email
   });
 
 });
+
 
 
 // =====================================
