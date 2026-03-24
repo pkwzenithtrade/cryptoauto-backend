@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const axios = require("axios");
 
-const User = require("../models/user.model");
+const User = require("../models/User");
 
 const {
   createCustomer,
