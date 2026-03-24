@@ -68,52 +68,39 @@ router.get("/pix", async (req, res) => {
 // =====================================
 router.get("/boleto", async (req, res) => {
 
-  try {
+  const email = req.query.email;
 
-    const email = req.query.email;
-
-    if (!email) {
-      return res.status(400).json({ error: "Email obrigatório" });
-    }
-
-    // 🔥 SALVA USUÁRIO
-    await User.findOneAndUpdate(
-      { email },
-      { email },
-      { upsert: true, new: true }
-    );
-
-    const customer = await createCustomer(email);
-
-    if (!customer || customer.error) {
-      return res.status(500).json({
-        error: "Erro ao criar cliente",
-        details: customer?.error || null
-      });
-    }
-
-    const payment = await createBoletoPayment(customer.id);
-
-    if (!payment || payment.error) {
-      return res.status(500).json({
-        error: "Erro ao gerar pagamento",
-        details: payment?.error || null
-      });
-    }
-
-    res.json({
-      paymentId: payment.id,
-      boletoUrl: payment.invoiceUrl,
-      email: email
-    });
-
-  } catch (error) {
-
-    console.error("❌ ERRO BOLETO:", error.message);
-
-    res.status(500).json({ error: "Erro interno" });
-
+  if (!email) {
+    return res.status(400).json({ error: "Email obrigatório" });
   }
+
+  // 🔥 SALVA USUÁRIO NO BANCO (AQUI É O PASSO 2)
+  await User.findOneAndUpdate(
+    { email: email },
+    { email: email },
+    { upsert: true, new: true }
+  );
+
+  const customer = await createCustomer(email);
+
+  if (!customer || customer.error) {
+    return res.status(500).json({ error: "Erro ao criar cliente" });
+  }
+
+  const payment = await createBoletoPayment(customer.id);
+
+  if (!payment || payment.error) {
+    return res.status(500).json({
+      error: "Erro ao gerar pagamento",
+      details: payment?.error || null
+    });
+  }
+
+  res.json({
+    paymentId: payment.id,
+    boletoUrl: payment.invoiceUrl,
+    email: email
+  });
 
 });
 
