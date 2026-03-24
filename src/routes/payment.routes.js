@@ -1,3 +1,4 @@
+const User = require("../models/user.model");
 const express = require("express");
 const router = express.Router();
 const axios = require("axios");
@@ -17,6 +18,12 @@ router.get("/pix", async (req, res) => {
 
   const customer = await createCustomer();
 
+  await User.findOneAndUpdate(
+  { email },
+  { email },
+  { upsert: true, new: true }
+);
+  
   if (!customer || customer.error) {
     return res.status(500).json({ error: "Erro cliente", details: customer });
   }
