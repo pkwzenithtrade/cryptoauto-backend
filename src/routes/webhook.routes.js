@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const User = require("../models/user.model");
 
 // 🔐 TOKEN DO ASAAS (coloque no .env depois)
 const ASAAS_WEBHOOK_TOKEN = process.env.ASAAS_WEBHOOK_TOKEN;
@@ -25,13 +26,18 @@ router.post("/asaas", async (req, res) => {
     
     if (event.event === "PAYMENT_RECEIVED") {
 
-      const payment = event.payment;
+  const payment = event.payment;
 
-      console.log("💰 PAGAMENTO CONFIRMADO:", payment.id);
+  console.log("💰 PAGAMENTO CONFIRMADO:", payment.id);
 
-      const email = payment.customer; // vamos ajustar depois melhor
+  // 🔥 BUSCAR CLIENTE NO ASAAS
+  const customerId = payment.customer;
 
-      console.log("📧 Cliente:", email);
+  // 🚀 ATUALIZA TODOS (TEMPORÁRIO SIMPLES)
+  await User.updateMany({}, { isVIP: true });
+
+  console.log("🔥 VIP LIBERADO");
+    }
 
       
       // 🚀 LIBERAR VIP (por enquanto teste)
