@@ -22,12 +22,18 @@ router.post("/asaas", async (req, res) => {
     console.log("📩 WEBHOOK RECEBIDO:", event);
 
     // 🔥 PAGAMENTO CONFIRMADO
+    
     if (event.event === "PAYMENT_RECEIVED") {
 
       const payment = event.payment;
 
       console.log("💰 PAGAMENTO CONFIRMADO:", payment.id);
 
+      const email = payment.customer; // vamos ajustar depois melhor
+
+      console.log("📧 Cliente:", email);
+
+      
       // 🚀 LIBERAR VIP (por enquanto teste)
       console.log("🔥 LIBERAR VIP PARA USUÁRIO");
 
