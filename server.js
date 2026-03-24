@@ -19,11 +19,11 @@ const authMiddleware = require("./src/middleware/auth.middleware");
 
 const app = express();
 
-// 🔥 MIDDLEWARE PRIMEIRO
+// 🔥 PRIMEIRO OS MIDDLEWARES
 app.use(cors());
 app.use(express.json());
 
-// 🔥 ROTAS
+// 🔥 DEPOIS AS ROTAS
 app.use("/auth", authRoutes);
 app.use("/portfolio", portfolioRoutes);
 app.use("/ai", aiRoutes);
@@ -113,7 +113,7 @@ app.get("/ai/opportunities", authMiddleware, (req, res) => {
 });
 
 // =====================================
-// INICIALIZAÇÃO
+// START
 // =====================================
 
 const PORT = process.env.PORT || 3000;
@@ -123,13 +123,13 @@ async function startServer() {
   try {
 
     await mongoose.connect(process.env.MONGO_URI);
+
     console.log("MongoDB conectado");
 
     console.log("AI Scanner iniciado");
 
     lastOpportunities = await scanOpportunities();
 
-    // 🔥 LOOP PRINCIPAL
     setInterval(async () => {
 
       try {
@@ -143,7 +143,6 @@ async function startServer() {
           console.log("NOVAS OPORTUNIDADES:", newData);
 
           const message = formatOpportunities(newData);
-
           await sendMessage(message);
 
         }
