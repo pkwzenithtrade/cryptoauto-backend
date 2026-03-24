@@ -115,5 +115,6 @@ async function createPixPayment(customerId) {
 
 module.exports = {
   createCustomer,
-  createPixPayment
+  createPixPayment,
+  createBoletoPayment
 };
