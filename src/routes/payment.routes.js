@@ -16,7 +16,7 @@ router.get("/pix", async (req, res) => {
   const payment = await createPixPayment(customer.id);
 
   if (!payment) {
-    return res.status(500).json({ error: "Erro ao gerar pagamento" });
+  return res.status(500).json({ error: "Erro ao gerar pagamento (ver logs)" });
   }
 
   res.json({
