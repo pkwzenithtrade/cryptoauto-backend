@@ -12,8 +12,8 @@ async function createCustomer() {
       API + "/customers",
       {
         name: "Cliente CryptoAuto",
-        email: "cliente@email.com",
-        cpfCnpj: "12345678901"
+        email: "teste@cryptoauto.com",
+        cpfCnpj: "11144477735"
       },
       {
         headers: {
@@ -25,8 +25,8 @@ async function createCustomer() {
     return response.data;
 
   } catch (error) {
-    console.log("Erro cliente:", error.response?.data || error.message);
-    return null;
+  console.log("Erro cliente ASAAS:", error.response?.data || error.message);
+  return null;
   }
 }
 
