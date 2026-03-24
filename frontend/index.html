@@ -9,14 +9,10 @@
 
 <h1>🚀 CryptoAuto Trading AI</h1>
 
-<h2>Oportunidades do Mercado</h2>
+<h2>Área do Usuário</h2>
 
-<button onclick="loadOpportunities()">Buscar oportunidades</button>
-
-<br><br>
-
-<!-- 🔥 BOTÃO VIP -->
-<button onclick="virarVIP()">🔥 Virar VIP</button>
+<!-- 🔥 BOTÃO ENTRAR -->
+<button onclick="verificarVIP()">Entrar</button>
 
 <br><br>
 
@@ -27,7 +23,62 @@
 const API = "https://cryptoauto-backend.onrender.com"
 
 // ===============================
-// 🔥 BUSCAR OPORTUNIDADES
+// 🔐 VERIFICAR VIP
+// ===============================
+async function verificarVIP(){
+
+ const email = prompt("Digite seu email:");
+
+ if(!email){
+  alert("Email obrigatório");
+  return;
+ }
+
+ try {
+
+  const res = await fetch(
+    API + "/user/vip?email=" + encodeURIComponent(email)
+  );
+
+  const data = await res.json();
+
+  const results = document.getElementById("results");
+
+  // 🔒 NÃO É VIP
+  if(!data.vip){
+
+    results.innerHTML = `
+      <h3>🔒 Conteúdo VIP</h3>
+      <p>Você ainda não é VIP</p>
+
+      <button onclick="virarVIP('${email}')">
+        🔥 Virar VIP
+      </button>
+
+      <br><br>
+
+      <button onclick="loadOpportunities()">
+        👀 Ver versão grátis
+      </button>
+    `;
+
+  } else {
+
+    // 🔓 VIP LIBERADO
+    loadVIP(email);
+
+  }
+
+ } catch (error) {
+
+  document.getElementById("results").innerHTML = "Erro ao verificar acesso";
+
+ }
+
+}
+
+// ===============================
+// 🔥 CARREGAR FREE
 // ===============================
 async function loadOpportunities(){
 
@@ -39,29 +90,24 @@ async function loadOpportunities(){
 
   const results = document.getElementById("results")
 
-  results.innerHTML = ""
+  results.innerHTML = "<h3>🚀 Sinais FREE</h3>"
 
   const coins = json.data || []
 
   if(coins.length === 0){
-    results.innerHTML = "Nenhum dado disponível"
+    results.innerHTML += "Nenhum dado disponível"
     return
   }
 
   coins.forEach(coin => {
 
-    const div = document.createElement("div")
-
-    div.innerHTML = `
+    results.innerHTML += `
       <b>${coin.name} (${coin.coin})</b><br>
       Preço: $${coin.price}<br>
       Sinal: ${coin.signal}<br>
       Confiança: ${coin.confidence}%<br>
-      Score: ${coin.score}<br>
       <hr>
     `
-
-    results.appendChild(div)
 
   })
 
@@ -74,11 +120,55 @@ async function loadOpportunities(){
 }
 
 // ===============================
-// 🔥 VIRAR VIP (BOLETO)
+// 🔓 CARREGAR VIP
 // ===============================
-async function virarVIP(){
+async function loadVIP(email){
 
- const email = prompt("Digite seu email para ativar o VIP:");
+ try {
+
+  const response = await fetch(API + "/ai/opportunities-public")
+
+  const json = await response.json()
+
+  const results = document.getElementById("results")
+
+  results.innerHTML = `
+    <h3>💎 Área VIP</h3>
+    <p>Bem-vindo: ${email}</p>
+  `
+
+  const coins = json.data || []
+
+  if(coins.length === 0){
+    results.innerHTML += "Nenhum dado disponível"
+    return
+  }
+
+  coins.forEach(coin => {
+
+    results.innerHTML += `
+      <b>${coin.name} (${coin.coin})</b><br>
+      Preço: $${coin.price}<br>
+      Sinal: ${coin.signal}<br>
+      Confiança: ${coin.confidence}%<br>
+      Score: ${coin.score}<br>
+      <hr>
+    `
+
+  })
+
+ } catch (error) {
+
+  document.getElementById("results").innerHTML = "Erro ao carregar VIP"
+
+ }
+
+}
+
+// ===============================
+// 💰 VIRAR VIP (BOLETO)
+// ===============================
+async function virarVIP(email){
 
  if(!email){
   alert("Email obrigatório");
@@ -106,7 +196,7 @@ async function virarVIP(){
       </a>
 
       <br><br>
-      ${data.boletoUrl}
+      <small>Após o pagamento, seu acesso será liberado automaticamente</small>
     `;
 
   } else {
@@ -118,3 +208,8 @@ async function virarVIP(){
  }
 
 }
+
+</script>
+
+</body>
+</html>
