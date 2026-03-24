@@ -13,19 +13,21 @@ const { sendMessage, formatOpportunities } = require("./src/services/telegram.se
 const authRoutes = require("./src/routes/auth.routes");
 const portfolioRoutes = require("./src/routes/portfolio.routes");
 const aiRoutes = require("./src/routes/ai.routes");
+const paymentRoutes = require("./src/routes/payment.routes");
 
 const authMiddleware = require("./src/middleware/auth.middleware");
 
 const app = express();
-const paymentRoutes = require("./src/routes/payment.routes");
 
-app.use("/payment", paymentRoutes);
+// 🔥 MIDDLEWARE PRIMEIRO
 app.use(cors());
 app.use(express.json());
 
+// 🔥 ROTAS
 app.use("/auth", authRoutes);
 app.use("/portfolio", portfolioRoutes);
 app.use("/ai", aiRoutes);
+app.use("/payment", paymentRoutes);
 
 let lastOpportunities = [];
 
@@ -35,7 +37,7 @@ let lastOpportunities = [];
 
 app.get("/ai/opportunities-public", (req, res) => {
 
-  const limited = lastOpportunities.slice(0, 2); // só 2 sinais
+  const limited = lastOpportunities.slice(0, 2);
 
   res.json({
     message: "🔒 Versão gratuita limitada",
@@ -65,7 +67,7 @@ app.get("/dashboard", authMiddleware, (req, res) => {
 });
 
 // =====================================
-// TESTE DE MERCADO (KRAKEN)
+// TESTE DE MERCADO
 // =====================================
 
 app.get("/test-market", async (req, res) => {
@@ -121,39 +123,33 @@ async function startServer() {
   try {
 
     await mongoose.connect(process.env.MONGO_URI);
-
     console.log("MongoDB conectado");
 
     console.log("AI Scanner iniciado");
 
     lastOpportunities = await scanOpportunities();
 
-    // 🔥 LOOP PRINCIPAL COM TELEGRAM
+    // 🔥 LOOP PRINCIPAL
     setInterval(async () => {
 
       try {
 
         const newData = await scanOpportunities();
 
-        // 🔥 DETECTA MUDANÇA
         if (JSON.stringify(newData) !== JSON.stringify(lastOpportunities)) {
 
           lastOpportunities = newData;
 
           console.log("NOVAS OPORTUNIDADES:", newData);
 
-          // ✅ USA FORMATADOR CORRETO
           const message = formatOpportunities(newData);
 
-          // ✅ ENVIA TELEGRAM CORRETO
           await sendMessage(message);
 
         }
 
       } catch (error) {
-
         console.error("Erro no scanner:", error.message);
-
       }
 
     }, 120000);
@@ -163,9 +159,7 @@ async function startServer() {
     });
 
   } catch (error) {
-
     console.error("Erro ao conectar MongoDB:", error.message);
-
   }
 
 }
