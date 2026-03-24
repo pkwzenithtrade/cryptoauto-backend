@@ -74,19 +74,24 @@ router.get("/boleto", async (req, res) => {
     return res.status(400).json({ error: "Email obrigatório" });
   }
 
-  // 🔥 SALVA USUÁRIO NO BANCO (AQUI É O PASSO 2)
-  await User.findOneAndUpdate(
-    { email: email },
-    { email: email },
-    { upsert: true, new: true }
-  );
-
+  // 🔥 cria cliente no Asaas
   const customer = await createCustomer(email);
 
   if (!customer || customer.error) {
     return res.status(500).json({ error: "Erro ao criar cliente" });
   }
 
+  // 🔥 salva usuário com ID do Asaas
+  await User.findOneAndUpdate(
+    { email: email },
+    {
+      email: email,
+      asaasCustomerId: customer.id
+    },
+    { upsert: true, new: true }
+  );
+
+  // 🔥 cria boleto
   const payment = await createBoletoPayment(customer.id);
 
   if (!payment || payment.error) {
@@ -103,6 +108,7 @@ router.get("/boleto", async (req, res) => {
   });
 
 });
+
 
 // =====================================
 // 🔥 QR PIX
