@@ -2,40 +2,45 @@ const express = require("express");
 const router = express.Router();
 const User = require("../models/User");
 
-// 🔐 TOKEN DO ASAAS
 const ASAAS_WEBHOOK_TOKEN = process.env.ASAAS_WEBHOOK_TOKEN;
 
-// 🔥 WEBHOOK ASAAS
 router.post("/asaas", async (req, res) => {
 
   try {
 
-    // 🔐 VALIDA TOKEN
     const receivedToken = req.headers["asaas-access-token"];
 
     if (ASAAS_WEBHOOK_TOKEN && receivedToken !== ASAAS_WEBHOOK_TOKEN) {
-      console.log("❌ TOKEN INVÁLIDO");
       return res.sendStatus(401);
     }
 
     const event = req.body;
 
-    console.log("📩 WEBHOOK RECEBIDO:", event);
+    console.log("📩 WEBHOOK:", event.event);
 
-    // 🔥 PAGAMENTO CONFIRMADO
-    if (event.event === "PAYMENT_RECEIVED" && event.payment) {
+    if (event.event === "PAYMENT_RECEIVED") {
 
       const payment = event.payment;
 
-      console.log("💰 PAGAMENTO CONFIRMADO:", payment.id);
+      console.log("💰 PAGAMENTO:", payment.id);
 
-      // 🚀 TEMPORÁRIO: LIBERA VIP PRA TODOS
-      await User.findOneAndUpdate(
-  { email: payment.customerEmail }, // ou campo equivalente
-  { isVIP: true }
-);
+      // 🔥 BUSCA USUÁRIO PELO ID DO ASAAS
+      const user = await User.findOne({
+        asaasCustomerId: payment.customer
+      });
 
-      console.log("🔥 VIP LIBERADO PARA TODOS");
+      if (user) {
+
+        user.isVIP = true;
+        await user.save();
+
+        console.log("🔥 VIP LIBERADO PARA:", user.email);
+
+      } else {
+
+        console.log("⚠️ Usuário não encontrado");
+
+      }
 
     }
 
@@ -43,8 +48,7 @@ router.post("/asaas", async (req, res) => {
 
   } catch (error) {
 
-    console.error("❌ Erro webhook:", error.message);
-
+    console.error("Erro webhook:", error.message);
     res.sendStatus(500);
 
   }
