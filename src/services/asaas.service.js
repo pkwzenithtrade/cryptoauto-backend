@@ -7,15 +7,15 @@ const API = "https://api.asaas.com/v3";
 // 🔥 CRIAR CLIENTE
 // =====================================
 
-async function createCustomer() {
+async function createCustomer(email) {
   try {
 
     const response = await axios.post(
       API + "/customers",
       {
-        name: "Cliente Teste",
-        email: "teste@teste.com",
-        cpfCnpj: "12345678909" // CPF válido de teste
+        name: email,
+        email: email,
+        cpfCnpj: "12345678909"
       },
       {
         headers: {
@@ -31,11 +31,9 @@ async function createCustomer() {
 
   } catch (error) {
 
-    console.log("❌ ERRO CLIENTE ASAAS:");
-    console.log(error.response?.data);
-    console.log(error.message);
+    console.log("❌ ERRO CLIENTE:", error.response?.data || error.message);
 
-    return { error: error.response?.data || error.message };
+    return null;
   }
 }
 
