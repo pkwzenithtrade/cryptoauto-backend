@@ -20,6 +20,7 @@ button {
   background: #22c55e;
   color: white;
   font-weight: bold;
+  cursor: pointer;
 }
 
 .vip {
@@ -37,6 +38,11 @@ button {
 .lock {
   color: red;
   font-size: 18px;
+}
+
+#status {
+  margin: 10px;
+  font-weight: bold;
 }
 </style>
 
@@ -82,7 +88,34 @@ function definirEmail(){
 }
 
 // ===============================
-// 🔒 VERIFICAR VIP REAL
+// 🔒 VERIFICAR VIP NO BACKEND
+// ===============================
+async function verificarVIP(){
+
+  if(!userEmail) return;
+
+  try {
+
+    const res = await fetch(
+      API + "/auth/check-vip?email=" + encodeURIComponent(userEmail)
+    );
+
+    const data = await res.json();
+
+    isVIP = data.isVIP || false;
+
+    document.getElementById("status").innerHTML = isVIP
+      ? "🔥 VIP ATIVO"
+      : "🔒 Conta gratuita";
+
+  } catch (error) {
+    console.log("Erro ao verificar VIP");
+  }
+
+}
+
+// ===============================
+// 💰 GERAR PAGAMENTO
 // ===============================
 async function virarVIP(){
 
@@ -91,19 +124,10 @@ async function virarVIP(){
   return;
  }
 
- const plan = prompt("Escolha o plano: basic | pro | premium");
-
- if(!plan){
-  alert("Escolha um plano");
-  return;
- }
-
  try {
 
   const res = await fetch(
-    API + "/payment/boleto?email=" +
-    encodeURIComponent(userEmail) +
-    "&plan=" + plan
+    API + "/payment/boleto?email=" + encodeURIComponent(userEmail)
   );
 
   const data = await res.json();
@@ -113,12 +137,15 @@ async function virarVIP(){
   if(data.boletoUrl){
 
     results.innerHTML = `
-      <h2>💰 Plano ${data.plan.toUpperCase()}</h2>
-      <p>Valor: R$ ${data.value}</p>
+      <h2>💰 Pagamento VIP</h2>
+      <p>Email: ${data.email}</p>
 
       <a href="${data.boletoUrl}" target="_blank">
         <button>💸 Pagar agora</button>
       </a>
+
+      <br><br>
+      <small>Após pagamento o VIP libera automaticamente</small>
     `;
 
   } else {
@@ -167,7 +194,7 @@ async function loadOpportunities(){
 
   });
 
-  // 🔒 BLOQUEIO
+  // 🔒 BLOQUEIO VIP
   if(!isVIP){
 
     const lock = document.createElement("div");
@@ -175,7 +202,7 @@ async function loadOpportunities(){
 
     lock.innerHTML = `
       <div class="lock">🔒 Conteúdo VIP</div>
-      <p>Desbloqueie todos os sinais</p>
+      <p>Desbloqueie todos os sinais premium</p>
       <button onclick="virarVIP()">🔥 Assinar agora</button>
     `;
 
@@ -184,50 +211,6 @@ async function loadOpportunities(){
 
  } catch (error) {
   document.getElementById("results").innerHTML = "Erro ao carregar";
- }
-
-}
-
-// ===============================
-// 💰 PAGAMENTO
-// ===============================
-async function virarVIP(){
-
- if(!userEmail){
-  alert("Defina seu email primeiro");
-  return;
- }
-
- try {
-
-  const res = await fetch(
-    API + "/payment/boleto?email=" + encodeURIComponent(userEmail)
-  );
-
-  const data = await res.json();
-
-  const results = document.getElementById("results");
-
-  if(data.boletoUrl){
-
-    results.innerHTML = `
-      <h2>💰 Pagamento VIP</h2>
-      <p>Email: ${data.email}</p>
-
-      <a href="${data.boletoUrl}" target="_blank">
-        <button>💸 Pagar agora</button>
-      </a>
-
-      <br><br>
-      <small>Após pagamento o VIP libera automaticamente</small>
-    `;
-
-  } else {
-    results.innerHTML = "Erro ao gerar pagamento";
-  }
-
- } catch (error) {
-  alert("Erro ao conectar");
  }
 
 }
