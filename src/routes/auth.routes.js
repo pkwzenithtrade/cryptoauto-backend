@@ -13,14 +13,15 @@ router.post("/register", async (req, res) => {
 
   try {
 
-    const { email, password } = req.body;
+    let { email, password } = req.body;
 
-    // Validação básica
     if (!email || !password) {
       return res.status(400).json({
         error: "Email e senha são obrigatórios"
       });
     }
+
+    email = email.toLowerCase();
 
     if (password.length < 6) {
       return res.status(400).json({
@@ -28,7 +29,6 @@ router.post("/register", async (req, res) => {
       });
     }
 
-    // Verifica se usuário já existe
     const existingUser = await User.findOne({ email });
 
     if (existingUser) {
@@ -37,10 +37,8 @@ router.post("/register", async (req, res) => {
       });
     }
 
-    // Criptografa senha
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Cria usuário
     const user = new User({
       email,
       password: hashedPassword
@@ -72,7 +70,7 @@ router.post("/login", async (req, res) => {
 
   try {
 
-    const { email, password } = req.body;
+    let { email, password } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({
@@ -80,7 +78,8 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    // Busca usuário
+    email = email.toLowerCase();
+
     const user = await User.findOne({ email });
 
     if (!user) {
@@ -89,7 +88,6 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    // Verifica senha
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
@@ -98,7 +96,6 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    // Gera token
     const token = jwt.sign(
       { id: user._id },
       process.env.JWT_SECRET,
@@ -107,7 +104,9 @@ router.post("/login", async (req, res) => {
 
     res.json({
       token,
-      userId: user._id
+      userId: user._id,
+      isVIP: user.isVIP,
+      plan: user.plan
     });
 
   } catch (error) {
@@ -116,6 +115,50 @@ router.post("/login", async (req, res) => {
 
     res.status(500).json({
       error: "Erro interno no servidor"
+    });
+
+  }
+
+});
+
+
+// =================================
+// 🔥 CHECK VIP (ESSENCIAL)
+// =================================
+router.get("/check-vip", async (req, res) => {
+
+  try {
+
+    let { email } = req.query;
+
+    if (!email) {
+      return res.status(400).json({
+        error: "Email obrigatório"
+      });
+    }
+
+    email = email.toLowerCase();
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.json({
+        isVIP: false,
+        plan: "free"
+      });
+    }
+
+    res.json({
+      isVIP: user.isVIP,
+      plan: user.plan
+    });
+
+  } catch (error) {
+
+    console.log("Erro ao verificar VIP:", error.message);
+
+    res.status(500).json({
+      error: "Erro interno"
     });
 
   }
