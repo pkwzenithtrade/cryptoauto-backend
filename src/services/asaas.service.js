@@ -41,7 +41,7 @@ async function createCustomer(email) {
 // 🔥 CRIAR PAGAMENTO BOLETO
 // =====================================
 
-async function createBoletoPayment(customerId) {
+async function createBoletoPayment(customerId, value, plan) {
   try {
 
     const response = await axios.post(
@@ -49,8 +49,8 @@ async function createBoletoPayment(customerId) {
       {
         customer: customerId,
         billingType: "BOLETO",
-        value: 19.9,
-        description: "CryptoAuto VIP",
+        value: value,
+        description: "Plano " + plan + " CryptoAuto",
         dueDate: new Date().toISOString().split("T")[0]
       },
       {
@@ -61,15 +61,12 @@ async function createBoletoPayment(customerId) {
       }
     );
 
-    console.log("✅ Boleto criado:", response.data.id);
-
     return response.data;
 
   } catch (error) {
 
-    console.log("❌ ERRO BOLETO:", error.response?.data || error.message);
-
     return { error: error.response?.data || error.message };
+
   }
 }
 
