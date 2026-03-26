@@ -84,30 +84,49 @@ function definirEmail(){
 // ===============================
 // 🔒 VERIFICAR VIP REAL
 // ===============================
-async function verificarVIP(){
+async function virarVIP(){
 
- if(!userEmail) return;
+ if(!userEmail){
+  alert("Defina seu email primeiro");
+  return;
+ }
+
+ const plan = prompt("Escolha o plano: basic | pro | premium");
+
+ if(!plan){
+  alert("Escolha um plano");
+  return;
+ }
 
  try {
 
   const res = await fetch(
-    API + "/user/status?email=" + encodeURIComponent(userEmail)
+    API + "/payment/boleto?email=" +
+    encodeURIComponent(userEmail) +
+    "&plan=" + plan
   );
 
   const data = await res.json();
 
-  isVIP = data.isVIP;
+  const results = document.getElementById("results");
 
-  const status = document.getElementById("status");
+  if(data.boletoUrl){
 
-  if(isVIP){
-    status.innerHTML = "💎 VIP ATIVO (" + data.plan + ")";
+    results.innerHTML = `
+      <h2>💰 Plano ${data.plan.toUpperCase()}</h2>
+      <p>Valor: R$ ${data.value}</p>
+
+      <a href="${data.boletoUrl}" target="_blank">
+        <button>💸 Pagar agora</button>
+      </a>
+    `;
+
   } else {
-    status.innerHTML = "🔒 Conta Free";
+    results.innerHTML = "Erro ao gerar pagamento";
   }
 
  } catch (error) {
-  console.log("Erro ao verificar VIP");
+  alert("Erro ao conectar");
  }
 
 }
