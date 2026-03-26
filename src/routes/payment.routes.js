@@ -25,10 +25,13 @@ router.get("/pix", async (req, res) => {
 
     // 🔥 SALVA USUÁRIO
     await User.findOneAndUpdate(
-      { email },
-      { email },
-      { upsert: true, new: true }
-    );
+  { email },
+  {
+    email,
+    asaasCustomerId: customer.id
+  },
+  { upsert: true, new: true }
+);
 
     const customer = await createCustomer(email);
 
