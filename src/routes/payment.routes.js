@@ -1,13 +1,13 @@
 const express = require("express");
 const router = express.Router();
 const User = require("../models/User");
-const axios = require("axios");
 
 const {
   createCustomer,
   createPixPayment,
   createBoletoPayment
 } = require("../services/asaas.service");
+
 
 // =====================================
 // 🔥 BOLETO (PRINCIPAL AGORA)
@@ -23,7 +23,14 @@ router.get("/boleto", async (req, res) => {
       return res.status(400).json({ error: "Email obrigatório" });
     }
 
-    // 🔥 1. CRIAR CLIENTE NO ASAAS
+    // 🔥 CRIA OU BUSCA USUÁRIO
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      user = await User.create({ email });
+    }
+
+    // 🔥 CRIA CLIENTE NO ASAAS
     const customer = await createCustomer(email);
 
     if (!customer || customer.error) {
@@ -33,19 +40,13 @@ router.get("/boleto", async (req, res) => {
       });
     }
 
-    // 🔥 2. SALVAR NO BANCO (AQUI ESTÁ O OURO)
-    const user = await User.findOneAndUpdate(
-      { email: email },
-      {
-        email: email,
-        asaasCustomerId: customer.id
-      },
-      { upsert: true, new: true }
-    );
+    // 🔥 SALVA ID DO ASAAS NO USUÁRIO
+    user.asaasCustomerId = customer.id;
+    await user.save();
 
-    console.log("👤 Usuário salvo:", user.email);
+    console.log("👤 Cliente vinculado:", email, customer.id);
 
-    // 🔥 3. CRIAR BOLETO
+    // 🔥 CRIA PAGAMENTO
     const payment = await createBoletoPayment(customer.id);
 
     if (!payment || payment.error) {
@@ -55,7 +56,6 @@ router.get("/boleto", async (req, res) => {
       });
     }
 
-    // 🔥 4. RETORNAR PARA O FRONT
     res.json({
       paymentId: payment.id,
       boletoUrl: payment.invoiceUrl,
@@ -64,7 +64,7 @@ router.get("/boleto", async (req, res) => {
 
   } catch (error) {
 
-    console.error("Erro geral:", error.message);
+    console.error("❌ ERRO BOLETO:", error.message);
 
     res.status(500).json({
       error: "Erro interno",
@@ -77,7 +77,7 @@ router.get("/boleto", async (req, res) => {
 
 
 // =====================================
-// 🔥 PIX (FUTURO)
+// 🔥 PIX (quando liberar)
 // =====================================
 
 router.get("/pix", async (req, res) => {
@@ -90,6 +90,12 @@ router.get("/pix", async (req, res) => {
       return res.status(400).json({ error: "Email obrigatório" });
     }
 
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      user = await User.create({ email });
+    }
+
     const customer = await createCustomer(email);
 
     if (!customer || customer.error) {
@@ -99,15 +105,8 @@ router.get("/pix", async (req, res) => {
       });
     }
 
-    // 🔥 SALVA USUÁRIO
-    await User.findOneAndUpdate(
-      { email: email },
-      {
-        email: email,
-        asaasCustomerId: customer.id
-      },
-      { upsert: true, new: true }
-    );
+    user.asaasCustomerId = customer.id;
+    await user.save();
 
     const payment = await createPixPayment(customer.id);
 
@@ -127,37 +126,6 @@ router.get("/pix", async (req, res) => {
     res.status(500).json({
       error: "Erro interno",
       details: error.message
-    });
-
-  }
-
-});
-
-
-// =====================================
-// 🔥 QR PIX
-// =====================================
-
-router.get("/pix/:id", async (req, res) => {
-
-  try {
-
-    const response = await axios.get(
-      `https://api.asaas.com/v3/payments/${req.params.id}/pixQrCode`,
-      {
-        headers: {
-          access_token: process.env.ASAAS_API_KEY
-        }
-      }
-    );
-
-    res.json(response.data);
-
-  } catch (error) {
-
-    res.status(500).json({
-      error: "Erro QR Code",
-      details: error.response?.data || error.message
     });
 
   }
