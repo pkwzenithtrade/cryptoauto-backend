@@ -23,11 +23,10 @@ const userSchema = new mongoose.Schema({
 
   plan: {
     type: String,
-    enum: ["free", "pro", "premium"],
+    enum: ["free", "basic", "pro", "premium"],
     default: "free"
   },
 
-  // 🔥 ESSENCIAL PARA LIGAR COM ASAAS
   asaasCustomerId: {
     type: String,
     default: null
@@ -35,5 +34,5 @@ const userSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
-// 🔥 EVITA ERRO DE DUPLICAÇÃO DO MONGOOSE
+// 🔥 evita erro do mongoose
 module.exports = mongoose.models.User || mongoose.model("User", userSchema);
