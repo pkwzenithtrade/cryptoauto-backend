@@ -18,53 +18,55 @@ router.get("/boleto", async (req, res) => {
   try {
 
     const email = req.query.email;
+    const plan = req.query.plan || "basic";
 
     if (!email) {
       return res.status(400).json({ error: "Email obrigatório" });
     }
 
-    // 🔥 CRIA OU BUSCA USUÁRIO
+    // 💰 DEFINIÇÃO DE PREÇOS
+    let value = 29;
+
+    if (plan === "pro") value = 59;
+    if (plan === "premium") value = 97;
+
+    // 🔥 CRIAR OU BUSCAR USUÁRIO
     let user = await User.findOne({ email });
 
     if (!user) {
       user = await User.create({ email });
     }
 
-    // 🔥 CRIA CLIENTE NO ASAAS
+    // 🔥 CRIAR CLIENTE ASAAS
     const customer = await createCustomer(email);
 
     if (!customer || customer.error) {
-      return res.status(500).json({
-        error: "Erro ao criar cliente",
-        details: customer
-      });
+      return res.status(500).json({ error: "Erro cliente", details: customer });
     }
 
-    // 🔥 SALVA ID DO ASAAS NO USUÁRIO
+    // 🔥 SALVAR NO BANCO
     user.asaasCustomerId = customer.id;
+    user.plan = plan; // 🔥 guarda o plano escolhido
     await user.save();
 
-    console.log("👤 Cliente vinculado:", email, customer.id);
-
-    // 🔥 CRIA PAGAMENTO
-    const payment = await createBoletoPayment(customer.id);
+    // 🔥 CRIAR BOLETO
+    const payment = await createBoletoPayment(customer.id, value, plan);
 
     if (!payment || payment.error) {
       return res.status(500).json({
-        error: "Erro ao gerar pagamento",
-        details: payment?.error || null
+        error: "Erro pagamento",
+        details: payment
       });
     }
 
     res.json({
       paymentId: payment.id,
       boletoUrl: payment.invoiceUrl,
-      email: email
+      plan: plan,
+      value: value
     });
 
   } catch (error) {
-
-    console.error("❌ ERRO BOLETO:", error.message);
 
     res.status(500).json({
       error: "Erro interno",
@@ -74,6 +76,7 @@ router.get("/boleto", async (req, res) => {
   }
 
 });
+
 
 
 // =====================================
