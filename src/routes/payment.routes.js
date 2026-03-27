@@ -1,19 +1,19 @@
 const express = require("express");
 const router = express.Router();
-const User = require("../models/User");
 
+// ✅ CAMINHO CORRETO (confere sua pasta: modelos)
+const User = require("../modelos/User");
+
+// ✅ NOVO SERVICE (Mercado Pago)
 const {
-  createCustomer,
-  createPixPayment,
-  createBoletoPayment
-} = require("../services/asaas.service");
+  createPixPayment
+} = require("../servicos/mercadopago.service");
 
 
 // =====================================
-// 🔥 BOLETO (PRINCIPAL AGORA)
+// 💰 PAGAMENTO PIX (PRINCIPAL)
 // =====================================
-
-router.get("/boleto", async (req, res) => {
+router.get("/pix", async (req, res) => {
 
   try {
 
@@ -37,94 +37,32 @@ router.get("/boleto", async (req, res) => {
       user = await User.create({ email });
     }
 
-    // 🔥 CRIAR CLIENTE ASAAS
-    const customer = await createCustomer(email);
-
-    if (!customer || customer.error) {
-      return res.status(500).json({ error: "Erro cliente", details: customer });
-    }
-
-    // 🔥 SALVAR NO BANCO
-    user.asaasCustomerId = customer.id;
-    user.plan = plan; // 🔥 guarda o plano escolhido
+    // 🔥 SALVAR PLANO ESCOLHIDO (ANTES DO PAGAMENTO)
+    user.plan = plan;
     await user.save();
 
-    // 🔥 CRIAR BOLETO
-    const payment = await createBoletoPayment(customer.id, value, plan);
+    // 🔥 CRIAR PAGAMENTO PIX (SEM CUSTOMER)
+    const payment = await createPixPayment(email, value, plan);
 
     if (!payment || payment.error) {
       return res.status(500).json({
-        error: "Erro pagamento",
+        error: "Erro ao gerar PIX",
         details: payment
       });
     }
 
+    // 🔥 RETORNO PARA O FRONT
     res.json({
       paymentId: payment.id,
-      boletoUrl: payment.invoiceUrl,
+      qr_code: payment.qr_code,
+      qr_code_base64: payment.qr_code_base64,
       plan: plan,
       value: value
     });
 
   } catch (error) {
 
-    res.status(500).json({
-      error: "Erro interno",
-      details: error.message
-    });
-
-  }
-
-});
-
-
-
-// =====================================
-// 🔥 PIX (quando liberar)
-// =====================================
-
-router.get("/pix", async (req, res) => {
-
-  try {
-
-    const email = req.query.email;
-
-    if (!email) {
-      return res.status(400).json({ error: "Email obrigatório" });
-    }
-
-    let user = await User.findOne({ email });
-
-    if (!user) {
-      user = await User.create({ email });
-    }
-
-    const customer = await createCustomer(email);
-
-    if (!customer || customer.error) {
-      return res.status(500).json({
-        error: "Erro cliente",
-        details: customer
-      });
-    }
-
-    user.asaasCustomerId = customer.id;
-    await user.save();
-
-    const payment = await createPixPayment(customer.id);
-
-    if (!payment || payment.error) {
-      return res.status(500).json({
-        error: "Erro pagamento PIX",
-        details: payment
-      });
-    }
-
-    res.json({
-      paymentId: payment.id
-    });
-
-  } catch (error) {
+    console.error("❌ ERRO PAYMENT:", error.message);
 
     res.status(500).json({
       error: "Erro interno",
