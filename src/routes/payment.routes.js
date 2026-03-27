@@ -1,11 +1,11 @@
 const express = require("express");
 const router = express.Router();
 
-const User = require("../../modelos/User");
+const User = require("../models/User");
 
 const {
   createPixPayment
-} = require("../../servicos/mercadopago.service");
+} = require("../servicos/mercadopago.service");
 
 router.get("/pix", async (req, res) => {
   try {
