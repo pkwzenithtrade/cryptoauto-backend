@@ -24,8 +24,11 @@ async function createPixPayment(email, value = 29.9, plan = "basic") {
         email: email
       },
 
-      // 🔥 ESSENCIAL PRA IDENTIFICAR USUÁRIO
-      external_reference: email
+      // 🔥 IDENTIFICA USUÁRIO (ESSENCIAL PRO WEBHOOK)
+      external_reference: email,
+
+      // 🔥 GARANTE QUE PIX EXPIRA (evita lixo no sistema)
+      date_of_expiration: new Date(Date.now() + 1000 * 60 * 30) // 30 min
     };
 
     const response = await mercadopago.payment.create(payment_data);
@@ -34,16 +37,23 @@ async function createPixPayment(email, value = 29.9, plan = "basic") {
 
     console.log("✅ PIX criado:", data.id);
 
+    // 🔒 VALIDAÇÃO SEGURA
+    if (!data.point_of_interaction || !data.point_of_interaction.transaction_data) {
+      return {
+        error: "Erro ao gerar QR Code",
+        details: data
+      };
+    }
+
     return {
       id: data.id,
+      status: data.status,
 
-      // 🔥 CÓDIGO PIX (COPIA E COLA)
+      // 🔥 PIX copia e cola
       qr_code: data.point_of_interaction.transaction_data.qr_code,
 
-      // 🔥 IMAGEM PIX
-      qr_code_base64: data.point_of_interaction.transaction_data.qr_code_base64,
-
-      status: data.status
+      // 🔥 imagem base64
+      qr_code_base64: data.point_of_interaction.transaction_data.qr_code_base64
     };
 
   } catch (error) {
