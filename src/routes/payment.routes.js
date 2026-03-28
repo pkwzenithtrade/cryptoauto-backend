@@ -5,7 +5,7 @@ const User = require("../models/User");
 
 const {
   createPixPayment
-} = require("../serviços/mercadopago.service");
+} = require("../src/serviços/mercadopago.service");
 
 router.get("/pix", async (req, res) => {
   try {
