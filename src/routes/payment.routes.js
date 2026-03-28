@@ -1,16 +1,14 @@
 const express = require("express");
 const router = express.Router();
 
-// ⚠️ GARANTE QUE O CAMINHO ESTÁ CERTO
 const User = require("../models/User");
 
-// ⚠️ GARANTE QUE A PASTA É /services (SEM ACENTO)
 const {
   createPixPayment
 } = require("../services/mercadopago.service");
 
 // =====================================
-// 🔥 PIX MERCADO PAGO
+// 💰 GERAR PIX POR PLANO
 // =====================================
 router.get("/pix", async (req, res) => {
   try {
@@ -18,55 +16,36 @@ router.get("/pix", async (req, res) => {
     const email = req.query.email;
     const plan = req.query.plan || "basic";
 
-    // ===============================
-    // 🔒 VALIDAÇÃO
-    // ===============================
     if (!email) {
       return res.status(400).json({ error: "Email obrigatório" });
     }
 
-    // ===============================
-    // 💰 PLANOS
-    // ===============================
+    // 💸 PLANOS
     let value = 29;
-
     if (plan === "pro") value = 59;
     if (plan === "premium") value = 97;
 
-    // ===============================
-    // 👤 USUÁRIO
-    // ===============================
+    // 🔍 BUSCAR OU CRIAR USUÁRIO
     let user = await User.findOne({ email });
 
     if (!user) {
-      user = await User.create({
-        email,
-        isVIP: false,
-        plan: "free"
-      });
+      user = await User.create({ email });
     }
 
-    // Atualiza plano escolhido
+    // 🔥 SALVAR PLANO (ANTES DO PAGAMENTO)
     user.plan = plan;
     await user.save();
 
-    // ===============================
-    // 💸 PAGAMENTO PIX
-    // ===============================
+    // 💰 GERAR PIX
     const payment = await createPixPayment(email, value, plan);
 
     if (!payment || payment.error) {
-      console.log("❌ ERRO AO GERAR PIX:", payment);
-
       return res.status(500).json({
         error: "Erro ao gerar PIX",
         details: payment
       });
     }
 
-    // ===============================
-    // 🚀 RESPOSTA
-    // ===============================
     res.json({
       success: true,
       plan,
@@ -75,8 +54,6 @@ router.get("/pix", async (req, res) => {
     });
 
   } catch (error) {
-
-    console.log("❌ ERRO GERAL:", error.message);
 
     res.status(500).json({
       error: "Erro interno",
