@@ -3,8 +3,6 @@ const router = express.Router();
 const axios = require("axios");
 const User = require("../models/User");
 
-const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN;
-
 // =====================================
 // 🔔 WEBHOOK MERCADO PAGO
 // =====================================
@@ -12,38 +10,40 @@ router.post("/mercadopago", async (req, res) => {
 
   try {
 
-    console.log("📩 WEBHOOK RECEBIDO MP:", req.body);
+    console.log("📩 WEBHOOK RECEBIDO MP:");
+    console.log(JSON.stringify(req.body, null, 2));
 
-    const type = req.body.type;
-    const data = req.body.data;
+    const { type, data } = req.body;
 
-    // Só processa pagamento
+    // 🔒 Ignora eventos que não são pagamento
     if (type !== "payment") {
       return res.sendStatus(200);
     }
 
-    const paymentId = data.id;
+    const paymentId = data?.id;
 
     if (!paymentId) {
       console.log("❌ Payment ID não encontrado");
       return res.sendStatus(200);
     }
 
+    console.log("💳 Buscando pagamento:", paymentId);
+
     // =====================================
-    // 🔍 BUSCAR PAGAMENTO NA API MP
+    // 🔍 BUSCAR PAGAMENTO NO MERCADO PAGO
     // =====================================
     const response = await axios.get(
       `https://api.mercadopago.com/v1/payments/${paymentId}`,
       {
         headers: {
-          Authorization: `Bearer ${MP_ACCESS_TOKEN}`
+          Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`
         }
       }
     );
 
     const payment = response.data;
 
-    console.log("💰 STATUS PAGAMENTO:", payment.status);
+    console.log("📊 STATUS:", payment.status);
 
     // =====================================
     // ✅ PAGAMENTO APROVADO
@@ -51,6 +51,8 @@ router.post("/mercadopago", async (req, res) => {
     if (payment.status === "approved") {
 
       const email = payment.external_reference;
+
+      console.log("👤 EMAIL:", email);
 
       if (!email) {
         console.log("❌ external_reference não encontrado");
@@ -67,18 +69,22 @@ router.post("/mercadopago", async (req, res) => {
 
       // 🔥 LIBERAR VIP
       user.isVIP = true;
+      user.plan = "premium"; // garante plano
+
       await user.save();
 
-      console.log("🔥 VIP LIBERADO:", email);
+      console.log("🔥 VIP LIBERADO PARA:", email);
     }
 
-    res.sendStatus(200);
+    // Sempre responde 200 pro Mercado Pago
+    return res.sendStatus(200);
 
   } catch (error) {
 
-    console.error("❌ ERRO WEBHOOK MP:", error.response?.data || error.message);
-    res.sendStatus(500);
+    console.error("❌ ERRO WEBHOOK MP:");
+    console.error(error.response?.data || error.message);
 
+    return res.sendStatus(500);
   }
 
 });
