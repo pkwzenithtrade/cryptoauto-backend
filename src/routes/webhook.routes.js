@@ -1,73 +1,82 @@
 const express = require("express");
 const router = express.Router();
+const axios = require("axios");
 const User = require("../models/User");
 
-const ASAAS_WEBHOOK_TOKEN = process.env.ASAAS_WEBHOOK_TOKEN;
+const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN;
 
 // =====================================
-// 🔥 WEBHOOK ASAAS
+// 🔔 WEBHOOK MERCADO PAGO
 // =====================================
-router.post("/asaas", async (req, res) => {
+router.post("/mercadopago", async (req, res) => {
 
   try {
 
-    // 🔐 VALIDA TOKEN
-    const receivedToken = req.headers["asaas-access-token"];
+    console.log("📩 WEBHOOK RECEBIDO MP:", req.body);
 
-    if (ASAAS_WEBHOOK_TOKEN && receivedToken !== ASAAS_WEBHOOK_TOKEN) {
-      console.log("❌ TOKEN INVÁLIDO");
-      return res.sendStatus(401);
+    const type = req.body.type;
+    const data = req.body.data;
+
+    // Só processa pagamento
+    if (type !== "payment") {
+      return res.sendStatus(200);
     }
 
-    const event = req.body;
+    const paymentId = data.id;
 
-    console.log("📩 EVENTO RECEBIDO:", event?.event);
+    if (!paymentId) {
+      console.log("❌ Payment ID não encontrado");
+      return res.sendStatus(200);
+    }
 
     // =====================================
-    // 💰 PAGAMENTO CONFIRMADO
+    // 🔍 BUSCAR PAGAMENTO NA API MP
     // =====================================
-    if (event?.event === "PAYMENT_RECEIVED") {
+    const response = await axios.get(
+      `https://api.mercadopago.com/v1/payments/${paymentId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${MP_ACCESS_TOKEN}`
+        }
+      }
+    );
 
-      const payment = event.payment;
+    const payment = response.data;
 
-      if (!payment) {
-        console.log("❌ Payment não encontrado no webhook");
+    console.log("💰 STATUS PAGAMENTO:", payment.status);
+
+    // =====================================
+    // ✅ PAGAMENTO APROVADO
+    // =====================================
+    if (payment.status === "approved") {
+
+      const email = payment.external_reference;
+
+      if (!email) {
+        console.log("❌ external_reference não encontrado");
         return res.sendStatus(200);
       }
 
-      console.log("💰 PAGAMENTO CONFIRMADO:", payment.id);
-      console.log("👤 CUSTOMER ASAAS:", payment.customer);
-
-      // 🔥 BUSCAR USUÁRIO PELO ID DO ASAAS
-      const user = await User.findOne({
-        asaasCustomerId: payment.customer
-      });
+      // 🔥 BUSCAR USUÁRIO
+      const user = await User.findOne({ email });
 
       if (!user) {
-        console.log("⚠️ Usuário não encontrado no banco");
+        console.log("⚠️ Usuário não encontrado:", email);
         return res.sendStatus(200);
       }
 
-      // =====================================
       // 🔥 LIBERAR VIP
-      // =====================================
       user.isVIP = true;
-
-      // 🔥 DEFINIR PLANO (ajustável depois)
-      user.plan = "premium";
-
       await user.save();
 
-      console.log("🔥 VIP LIBERADO PARA:", user.email);
-
+      console.log("🔥 VIP LIBERADO:", email);
     }
 
-    // Sempre responder 200 pro Asaas
     res.sendStatus(200);
 
   } catch (error) {
 
-    console.error("❌ ERRO WEBHOOK:", error.message);
+    console.error("❌ ERRO WEBHOOK MP:", error.response?.data || error.message);
     res.sendStatus(500);
 
   }
