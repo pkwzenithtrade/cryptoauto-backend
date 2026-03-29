@@ -9,7 +9,7 @@ const {
 } = require("../services/mercadopago.service");
 
 // 🔒 ROTA PROTEGIDA
-router.get("/pix", authMiddleware, async (req, res) => {
+router.get("/pix", async (req, res) => {
   try {
 
     const userId = req.userId;
