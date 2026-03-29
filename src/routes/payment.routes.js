@@ -1,43 +1,42 @@
 const express = require("express");
 const router = express.Router();
 
+const authMiddleware = require("../middleware/auth.middleware");
 const User = require("../models/User");
 
 const {
   createPixPayment
 } = require("../services/mercadopago.service");
 
-// =====================================
-// 💰 GERAR PIX POR PLANO
-// =====================================
-router.get("/pix", async (req, res) => {
+// 🔒 ROTA PROTEGIDA
+router.get("/pix", authMiddleware, async (req, res) => {
   try {
 
-    const email = req.query.email;
+    const userId = req.userId;
+
     const plan = req.query.plan || "basic";
 
-    if (!email) {
-      return res.status(400).json({ error: "Email obrigatório" });
-    }
-
-    // 💸 PLANOS
     let value = 29;
     if (plan === "pro") value = 59;
     if (plan === "premium") value = 97;
 
-    // 🔍 BUSCAR OU CRIAR USUÁRIO
-    let user = await User.findOne({ email });
+    const user = await User.findById(userId);
 
     if (!user) {
-      user = await User.create({ email });
+      return res.status(404).json({
+        error: "Usuário não encontrado"
+      });
     }
 
-    // 🔥 SALVAR PLANO (ANTES DO PAGAMENTO)
+    // salva plano escolhido
     user.plan = plan;
     await user.save();
 
-    // 💰 GERAR PIX
-    const payment = await createPixPayment(email, value, plan);
+    const payment = await createPixPayment(
+      user.email,
+      value,
+      plan
+    );
 
     if (!payment || payment.error) {
       return res.status(500).json({
@@ -46,20 +45,13 @@ router.get("/pix", async (req, res) => {
       });
     }
 
-    res.json({
-      success: true,
-      plan,
-      value,
-      ...payment
-    });
+    res.json(payment);
 
   } catch (error) {
-
     res.status(500).json({
       error: "Erro interno",
       details: error.message
     });
-
   }
 });
 
