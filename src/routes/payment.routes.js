@@ -23,10 +23,10 @@ router.get("/pix", authMiddleware, async (req, res) => {
     const user = await User.findById(userId);
 
     if (!user) {
-      return res.status(404).json({
-        error: "Usuário não encontrado"
-      });
-    }
+  return res.status(400).json({
+    error: "Usuário não encontrado. Crie uma conta primeiro."
+  });
+}
 
     // salva plano escolhido
     user.plan = plan;
