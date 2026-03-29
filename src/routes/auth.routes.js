@@ -5,14 +5,11 @@ const User = require("../models/User");
 
 const router = express.Router();
 
-
 // =================================
 // REGISTER
 // =================================
 router.post("/register", async (req, res) => {
-
   try {
-
     let { email, password } = req.body;
 
     if (!email || !password) {
@@ -41,25 +38,25 @@ router.post("/register", async (req, res) => {
 
     const user = new User({
       email,
-      password: hashedPassword
+      password: hashedPassword,
+      isVIP: false,
+      plan: "free"
     });
 
     await user.save();
 
-    res.status(201).json({
+    return res.status(201).json({
+      success: true,
       message: "Usuário criado com sucesso"
     });
 
   } catch (error) {
-
     console.log("Erro no registro:", error.message);
 
     res.status(500).json({
       error: "Erro interno no servidor"
     });
-
   }
-
 });
 
 
@@ -67,9 +64,7 @@ router.post("/register", async (req, res) => {
 // LOGIN
 // =================================
 router.post("/login", async (req, res) => {
-
   try {
-
     let { email, password } = req.body;
 
     if (!email || !password) {
@@ -102,33 +97,32 @@ router.post("/login", async (req, res) => {
       { expiresIn: "7d" }
     );
 
-    res.json({
+    return res.json({
+      success: true,
       token,
-      userId: user._id,
-      isVIP: user.isVIP,
-      plan: user.plan
+      user: {
+        id: user._id,
+        email: user.email,
+        isVIP: user.isVIP || false,
+        plan: user.plan || "free"
+      }
     });
 
   } catch (error) {
-
     console.log("Erro no login:", error.message);
 
     res.status(500).json({
       error: "Erro interno no servidor"
     });
-
   }
-
 });
 
 
 // =================================
-// 🔥 CHECK VIP (ESSENCIAL)
+// 🔥 CHECK VIP (PADRÃO PARA APP)
 // =================================
 router.get("/check-vip", async (req, res) => {
-
   try {
-
     let { email } = req.query;
 
     if (!email) {
@@ -143,26 +137,25 @@ router.get("/check-vip", async (req, res) => {
 
     if (!user) {
       return res.json({
+        success: true,
         isVIP: false,
         plan: "free"
       });
     }
 
-    res.json({
-      isVIP: user.isVIP,
-      plan: user.plan
+    return res.json({
+      success: true,
+      isVIP: user.isVIP || false,
+      plan: user.plan || "free"
     });
 
   } catch (error) {
-
     console.log("Erro ao verificar VIP:", error.message);
 
     res.status(500).json({
       error: "Erro interno"
     });
-
   }
-
 });
 
 module.exports = router;
