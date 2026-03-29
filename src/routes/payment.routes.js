@@ -1,18 +1,28 @@
 const express = require("express");
 const router = express.Router();
 
-const authMiddleware = require("../middleware/auth.middleware");
 const User = require("../models/User");
 
 const {
   createPixPayment
 } = require("../services/mercadopago.service");
 
-// 🔒 ROTA PROTEGIDA
+// =====================================
+// 💰 GERAR PIX
+// =====================================
 router.get("/pix", async (req, res) => {
   try {
 
-    const userId = req.userId;
+    // 🔥 PEGA EMAIL CORRETO
+    let email = req.query.email;
+
+    if (!email) {
+      return res.status(400).json({
+        error: "Email obrigatório"
+      });
+    }
+
+    email = email.toLowerCase().trim();
 
     const plan = req.query.plan || "basic";
 
@@ -20,20 +30,20 @@ router.get("/pix", async (req, res) => {
     if (plan === "pro") value = 59;
     if (plan === "premium") value = 97;
 
-    const user = await User.findById(userId);
+    // 🔥 BUSCA OU CRIA USUÁRIO
+    let user = await User.findOne({ email });
 
     if (!user) {
-  return res.status(400).json({
-    error: "Usuário não encontrado. Crie uma conta primeiro."
-  });
-}
+      user = await User.create({ email });
+    }
 
-    // salva plano escolhido
+    // 🔥 SALVA PLANO ESCOLHIDO
     user.plan = plan;
     await user.save();
 
+    // 🔥 CRIA PAGAMENTO PIX
     const payment = await createPixPayment(
-      user.email,
+      email,
       value,
       plan
     );
@@ -48,10 +58,14 @@ router.get("/pix", async (req, res) => {
     res.json(payment);
 
   } catch (error) {
+
+    console.error("Erro PIX:", error.message);
+
     res.status(500).json({
       error: "Erro interno",
       details: error.message
     });
+
   }
 });
 
