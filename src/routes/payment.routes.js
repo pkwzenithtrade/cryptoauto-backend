@@ -13,10 +13,12 @@ const {
 router.get("/pix", async (req, res) => {
   try {
 
-    // 🔥 PEGA EMAIL CORRETO
+    // =====================================
+    // 🔥 VALIDAR EMAIL
+    // =====================================
     let email = req.query.email;
 
-    if (!email) {
+    if (!email || typeof email !== "string") {
       return res.status(400).json({
         error: "Email obrigatório"
       });
@@ -24,49 +26,27 @@ router.get("/pix", async (req, res) => {
 
     email = email.toLowerCase().trim();
 
-    const plan = req.query.plan || "basic";
-
-    let value = 29;
-    if (plan === "pro") value = 59;
-    if (plan === "premium") value = 97;
-
-    // 🔥 BUSCA OU CRIA USUÁRIO
-    let user = await User.findOne({ email });
-
-    if (!user) {
-      user = await User.create({ email });
-    }
-
-    // 🔥 SALVA PLANO ESCOLHIDO
-    user.plan = plan;
-    await user.save();
-
-    // 🔥 CRIA PAGAMENTO PIX
-    const payment = await createPixPayment(
-      email,
-      value,
-      plan
-    );
-
-    if (!payment || payment.error) {
-      return res.status(500).json({
-        error: "Erro ao gerar PIX",
-        details: payment
+    // valida formato simples
+    if (!email.includes("@")) {
+      return res.status(400).json({
+        error: "Email inválido"
       });
     }
 
-    res.json(payment);
+    // =====================================
+    // 💰 PLANO
+    // =====================================
+    const plan = req.query.plan || "basic";
 
-  } catch (error) {
+    let value = 29;
 
-    console.error("Erro PIX:", error.message);
+    if (plan === "pro") value = 59;
+    if (plan === "premium") value = 97;
 
-    res.status(500).json({
-      error: "Erro interno",
-      details: error.message
-    });
+    // =====================================
+    // 👤 BUSCAR OU CRIAR USUÁRIO
+    // =====================================
+    let user = await User.findOne({ email });
 
-  }
-});
-
-module.exports = router;
+    if (!user) {
+      user =
