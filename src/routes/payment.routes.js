@@ -49,4 +49,59 @@ router.get("/pix", async (req, res) => {
     let user = await User.findOne({ email });
 
     if (!user) {
-      user =
+      user = await User.create({
+        email,
+        plan: plan,
+        isVIP: false
+      });
+
+      console.log("👤 Novo usuário criado:", email);
+    } else {
+      // atualiza plano escolhido
+      user.plan = plan;
+      await user.save();
+    }
+
+    // =====================================
+    // 🔥 GERAR PIX
+    // =====================================
+    const payment = await createPixPayment(
+      email,
+      value,
+      plan
+    );
+
+    if (!payment || payment.error) {
+      console.log("❌ ERRO AO GERAR PIX:", payment);
+
+      return res.status(500).json({
+        error: "Erro ao gerar PIX",
+        details: payment
+      });
+    }
+
+    console.log("✅ PIX GERADO:", email, "| Plano:", plan);
+
+    // =====================================
+    // 🚀 RESPOSTA LIMPA
+    // =====================================
+    res.json({
+      success: true,
+      plan,
+      value,
+      ...payment
+    });
+
+  } catch (error) {
+
+    console.error("❌ ERRO PIX:", error.message);
+
+    res.status(500).json({
+      error: "Erro interno",
+      details: error.message
+    });
+
+  }
+});
+
+module.exports = router;
