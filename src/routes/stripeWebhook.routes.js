@@ -7,43 +7,53 @@ const User = require("../models/User");
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // =====================================
-// 🔔 WEBHOOK STRIPE
+// 🔔 WEBHOOK STRIPE (SEGURO)
 // =====================================
-router.post("/webhook", async (req, res) => {
+router.post(
+  "/webhook",
+  express.raw({ type: "application/json" }),
+  async (req, res) => {
+    try {
 
-  try {
+      const sig = req.headers["stripe-signature"];
 
-    const event = req.body;
+      const event = stripe.webhooks.constructEvent(
+        req.body,
+        sig,
+        process.env.STRIPE_WEBHOOK_SECRET
+      );
 
-    if (event.type === "checkout.session.completed") {
+      // ✅ PAGAMENTO CONFIRMADO
+      if (event.type === "checkout.session.completed") {
 
-      const session = event.data.object;
+        const session = event.data.object;
 
-      const email = session.metadata.email;
-      const plan = session.metadata.plan;
+        const email = session.metadata?.email;
+        const plan = session.metadata?.plan;
 
-      const user = await User.findOne({ email });
+        if (!email) return res.sendStatus(200);
 
-      if (!user) return res.sendStatus(200);
+        const user = await User.findOne({ email });
 
-      user.isVIP = true;
-      user.plan = plan;
+        if (!user) return res.sendStatus(200);
 
-      await user.save();
+        user.isVIP = true;
+        user.plan = plan || "premium";
 
-      console.log("🔥 VIP LIBERADO:", email);
+        await user.save();
+
+        console.log("🔥 VIP LIBERADO:", email);
+      }
+
+      res.sendStatus(200);
+
+    } catch (err) {
+
+      console.log("❌ ERRO WEBHOOK:", err.message);
+      res.sendStatus(400);
 
     }
-
-    res.sendStatus(200);
-
-  } catch (err) {
-
-    console.log(err.message);
-    res.sendStatus(500);
-
   }
-
-});
+);
 
 module.exports = router;
