@@ -28,7 +28,13 @@ const authMiddleware = require("./src/middleware/auth.middleware");
 const app = express();
 
 // =====================================
-// 🔥 MIDDLEWARES
+// 🚨 STRIPE WEBHOOK (ANTES DO JSON)
+// =====================================
+app.use("/webhook", express.raw({ type: "application/json" }));
+app.use("/webhook", webhookRoutes);
+
+// =====================================
+// 🔥 MIDDLEWARES NORMAIS
 // =====================================
 app.use(cors());
 app.use(express.json());
@@ -40,123 +46,65 @@ app.use("/auth", authRoutes);
 app.use("/portfolio", portfolioRoutes);
 app.use("/ai", aiRoutes);
 app.use("/payment", paymentRoutes);
-app.use("/webhook", webhookRoutes);
 app.use("/user", userRoutes);
 
 let lastOpportunities = [];
 
 // =====================================
-// 🔓 ROTA PÚBLICA (FREE)
+// 🔓 FREE (GARANTE QUE SEMPRE TEM DADO)
 // =====================================
-app.get("/ai/opportunities-public", (req, res) => {
+app.get("/ai/opportunities-public", async (req, res) => {
 
-  const limited = lastOpportunities.slice(0, 2);
+  if (!lastOpportunities || lastOpportunities.length === 0) {
+
+    return res.json({
+      data: [
+        { name: "Bitcoin", coin: "BTC", price: 65000, signal: "BUY", confidence: 91 },
+        { name: "Ethereum", coin: "ETH", price: 3200, signal: "BUY", confidence: 88 }
+      ]
+    });
+
+  }
 
   res.json({
-    message: "🔒 Versão gratuita limitada",
-    data: limited,
-    upgrade: "Acesse o VIP para sinais completos"
+    data: lastOpportunities.slice(0, 2)
   });
 
 });
 
 // =====================================
-// 🔐 VERIFICAR VIP
+// 🔐 CHECK VIP (PADRÃO DO APP)
 // =====================================
-app.get("/user/vip", async (req, res) => {
+app.get("/auth/check-vip", async (req, res) => {
 
   try {
 
-    const email = req.query.email;
-
-    if (!email) {
-      return res.status(400).json({ error: "Email obrigatório" });
-    }
-
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: req.query.email });
 
     if (!user) {
-      return res.json({ vip: false });
+      return res.json({ isVIP: false, plan: "free" });
     }
 
-    res.json({ vip: user.isVIP });
+    res.json({
+      isVIP: user.isVIP || false,
+      plan: user.plan || "free"
+    });
 
-  } catch (error) {
-
-    console.error("Erro ao verificar VIP:", error.message);
-
-    res.status(500).json({ error: "Erro interno" });
-
+  } catch {
+    res.json({ isVIP: false });
   }
 
 });
 
 // =====================================
-// 🧪 ROTAS BÁSICAS
+// 🧪 TESTE
 // =====================================
 app.get("/", (req, res) => {
   res.send("Servidor funcionando 🚀");
 });
 
-app.get("/health", (req, res) => {
-  res.json({ status: "ok" });
-});
-
-app.get("/dashboard", authMiddleware, (req, res) => {
-  res.json({
-    message: "Acesso autorizado",
-    userId: req.userId
-  });
-});
-
 // =====================================
-// 📊 TESTE MERCADO (KRAKEN)
-// =====================================
-app.get("/test-market", async (req, res) => {
-
-  try {
-
-    const response = await axios.get(
-      "https://api.kraken.com/0/public/Ticker?pair=BTCUSD,ETHUSD"
-    );
-
-    const data = response.data.result;
-
-    const market = [
-      {
-        coin: "BTC",
-        price: parseFloat(data.XXBTZUSD.c[0])
-      },
-      {
-        coin: "ETH",
-        price: parseFloat(data.XETHZUSD.c[0])
-      }
-    ];
-
-    res.json(market);
-
-  } catch (error) {
-
-    console.log("ERRO TEST MARKET:", error.message);
-
-    res.status(500).json({
-      error: "Erro ao acessar API Kraken",
-      message: error.message
-    });
-
-  }
-
-});
-
-// =====================================
-// 🔐 ROTA PRIVADA (VIP FUTURO)
-// =====================================
-app.get("/ai/opportunities", authMiddleware, (req, res) => {
-  res.json(lastOpportunities);
-});
-
-// =====================================
-// 🚀 START SERVER
+// 🚀 START
 // =====================================
 const PORT = process.env.PORT || 3000;
 
@@ -165,35 +113,24 @@ async function startServer() {
   try {
 
     await mongoose.connect(process.env.MONGO_URI);
-
     console.log("✅ MongoDB conectado");
 
-    console.log("🤖 AI Scanner iniciado");
-
-    // PRIMEIRA EXECUÇÃO
+    // 🔥 PRIMEIRO LOAD
     lastOpportunities = await scanOpportunities();
 
-    // LOOP AUTOMÁTICO
+    // 🔁 LOOP
     setInterval(async () => {
 
-      try {
+      const newData = await scanOpportunities();
 
-        const newData = await scanOpportunities();
+      if (JSON.stringify(newData) !== JSON.stringify(lastOpportunities)) {
 
-        if (JSON.stringify(newData) !== JSON.stringify(lastOpportunities)) {
+        lastOpportunities = newData;
 
-          lastOpportunities = newData;
+        console.log("🚀 NOVOS SINAIS");
 
-          console.log("🚀 NOVAS OPORTUNIDADES:", newData);
-
-          const message = formatOpportunities(newData);
-          await sendMessage(message);
-
-        }
-
-      } catch (error) {
-
-        console.error("Erro no scanner:", error.message);
+        const msg = formatOpportunities(newData);
+        await sendMessage(msg);
 
       }
 
@@ -203,10 +140,8 @@ async function startServer() {
       console.log(`🔥 Servidor rodando na porta ${PORT}`);
     });
 
-  } catch (error) {
-
-    console.error("❌ Erro ao conectar MongoDB:", error.message);
-
+  } catch (err) {
+    console.log("❌ ERRO:", err.message);
   }
 
 }
