@@ -1,10 +1,11 @@
 const express = require("express");
 const router = express.Router();
+const Stripe = require("stripe");
 
-const { createCheckoutSession } = require("../services/stripe.service");
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // =====================================
-// 💳 CHECKOUT STRIPE
+// 💰 CRIAR CHECKOUT STRIPE
 // =====================================
 router.get("/checkout", async (req, res) => {
 
@@ -13,23 +14,52 @@ router.get("/checkout", async (req, res) => {
     const { email, plan } = req.query;
 
     if (!email) {
-      return res.status(400).json({
-        error: "Email obrigatório"
-      });
+      return res.status(400).json({ error: "Email obrigatório" });
     }
 
-    const url = await createCheckoutSession(email, plan || "basic");
+    let price = 2900; // centavos (R$29)
 
-    res.json({ url });
+    if (plan === "pro") price = 5900;
+    if (plan === "premium") price = 9700;
 
-  } catch (error) {
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
 
-    console.log(error.message);
+      line_items: [
+        {
+          price_data: {
+            currency: "brl",
+            product_data: {
+              name: `Plano ${plan || "basic"} CryptoAuto AI`
+            },
+            unit_amount: price
+          },
+          quantity: 1
+        }
+      ],
+
+      mode: "payment",
+
+      success_url: "https://google.com", // depois trocamos
+      cancel_url: "https://google.com",
+
+      customer_email: email,
+
+      metadata: {
+        email,
+        plan: plan || "basic"
+      }
+    });
+
+    res.json({ url: session.url });
+
+  } catch (err) {
+
+    console.log(err.message);
 
     res.status(500).json({
       error: "Erro ao criar pagamento"
     });
-
   }
 
 });
