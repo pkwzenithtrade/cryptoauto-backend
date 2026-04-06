@@ -11,13 +11,16 @@ router.get("/checkout", async (req, res) => {
 
   try {
 
-    const { email, plan } = req.query;
+    let { email, plan } = req.query;
 
     if (!email) {
       return res.status(400).json({ error: "Email obrigatório" });
     }
 
-    let price = 2900; // R$29
+    // 🔥 PADRONIZA EMAIL (CRÍTICO)
+    email = email.toLowerCase().trim();
+
+    let price = 2900;
 
     if (plan === "pro") price = 5900;
     if (plan === "premium") price = 9700;
@@ -45,11 +48,14 @@ router.get("/checkout", async (req, res) => {
 
       customer_email: email,
 
+      // 🔥 METADATA CORRETO
       metadata: {
-        email,
+        email: email,
         plan: plan || "basic"
       }
     });
+
+    console.log("💳 Checkout criado:", email);
 
     res.json({ url: session.url });
 
