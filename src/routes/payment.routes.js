@@ -17,7 +17,7 @@ router.get("/checkout", async (req, res) => {
       return res.status(400).json({ error: "Email obrigatório" });
     }
 
-    let price = 2900; // centavos (R$29)
+    let price = 2900; // R$29
 
     if (plan === "pro") price = 5900;
     if (plan === "premium") price = 9700;
@@ -40,8 +40,8 @@ router.get("/checkout", async (req, res) => {
 
       mode: "payment",
 
-      success_url: "https://google.com", // depois trocamos
-      cancel_url: "https://google.com",
+      success_url: "https://cryptoauto-app.vercel.app/success",
+      cancel_url: "https://cryptoauto-app.vercel.app/cancel",
 
       customer_email: email,
 
@@ -55,7 +55,7 @@ router.get("/checkout", async (req, res) => {
 
   } catch (err) {
 
-    console.log(err.message);
+    console.log("❌ ERRO STRIPE:", err.message);
 
     res.status(500).json({
       error: "Erro ao criar pagamento"
