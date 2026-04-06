@@ -181,4 +181,4 @@ setInterval(() => {
 // ===============================
 if (userEmail) {
   verificarVIP();
-                  }
+}
