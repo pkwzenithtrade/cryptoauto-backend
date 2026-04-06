@@ -7,7 +7,7 @@ const User = require("../models/User");
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // =====================================
-// 🔔 WEBHOOK STRIPE (SEGURO E FUNCIONAL)
+// 🔔 WEBHOOK STRIPE (100% FUNCIONAL)
 // =====================================
 router.post(
   "/",
@@ -20,7 +20,7 @@ router.post(
 
       const sig = req.headers["stripe-signature"];
 
-      // 🔥 valida assinatura (ESSENCIAL)
+      // 🔐 valida assinatura
       event = stripe.webhooks.constructEvent(
         req.body,
         sig,
@@ -44,13 +44,23 @@ router.post(
 
         const session = event.data.object;
 
-        const email = session.metadata?.email;
+        // 🔥 pega email com fallback (CRÍTICO)
+        let email =
+          session.metadata?.email ||
+          session.customer_email ||
+          session.customer_details?.email;
+
         const plan = session.metadata?.plan;
+
+        // 🔥 padroniza email
+        if (email) {
+          email = email.toLowerCase().trim();
+        }
 
         console.log("💳 Pagamento aprovado:", email, plan);
 
         if (!email) {
-          console.log("❌ Email não encontrado no metadata");
+          console.log("❌ Email não encontrado");
           return res.sendStatus(200);
         }
 
@@ -61,7 +71,9 @@ router.post(
           return res.sendStatus(200);
         }
 
+        // =====================================
         // 🔥 LIBERA VIP
+        // =====================================
         user.isVIP = true;
         user.plan = plan || "premium";
 
