@@ -10,7 +10,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 // 🔔 WEBHOOK STRIPE (SEGURO E FUNCIONAL)
 // =====================================
 router.post(
-  "/webhook",
+  "/",
   express.raw({ type: "application/json" }),
   async (req, res) => {
 
