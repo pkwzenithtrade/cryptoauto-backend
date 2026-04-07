@@ -40,7 +40,10 @@ router.post(
       // =====================================
       // 💰 PAGAMENTO CONFIRMADO
       // =====================================
-      if (event.type === "checkout.session.completed") {
+      if (
+  event.type === "checkout.session.completed" ||
+  event.type === "invoice.payment_succeeded"
+) {
 
         const session = event.data.object;
 
