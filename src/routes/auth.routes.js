@@ -18,7 +18,7 @@ router.post("/register", async (req, res) => {
       });
     }
 
-    email = email.toLowerCase();
+    email = email.toLowerCase().trim();
 
     if (password.length < 6) {
       return res.status(400).json({
@@ -73,7 +73,7 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    email = email.toLowerCase();
+    email = email.toLowerCase().trim();
 
     const user = await User.findOne({ email });
 
@@ -100,12 +100,8 @@ router.post("/login", async (req, res) => {
     return res.json({
       success: true,
       token,
-      user: {
-        id: user._id,
-        email: user.email,
-        isVIP: user.isVIP || false,
-        plan: user.plan || "free"
-      }
+      vip: user.isVIP || false,   // 🔥 PADRÃO
+      plan: user.plan || "free"
     });
 
   } catch (error) {
@@ -119,7 +115,7 @@ router.post("/login", async (req, res) => {
 
 
 // =================================
-// 🔥 CHECK VIP (PADRÃO PARA APP)
+// 🔥 CHECK VIP PADRÃO
 // =================================
 router.get("/check-vip", async (req, res) => {
   try {
@@ -131,21 +127,19 @@ router.get("/check-vip", async (req, res) => {
       });
     }
 
-    email = email.toLowerCase();
+    email = email.toLowerCase().trim();
 
     const user = await User.findOne({ email });
 
     if (!user) {
       return res.json({
-        success: true,
-        isVIP: false,
+        vip: false,
         plan: "free"
       });
     }
 
     return res.json({
-      success: true,
-      isVIP: user.isVIP || false,
+      vip: user.isVIP || false,
       plan: user.plan || "free"
     });
 
