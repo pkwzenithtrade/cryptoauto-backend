@@ -43,8 +43,8 @@ router.get("/checkout", async (req, res) => {
 
       mode: "payment",
 
-      success_url: "https://cryptoauto-app.vercel.app/success",
-      cancel_url: "https://cryptoauto-app.vercel.app/cancel",
+      success_url: "https://cryptoauto-backend.onrender.com",
+cancel_url: "https://cryptoauto-backend.onrender.com",
 
       customer_email: email,
 
