@@ -5,12 +5,12 @@ const Stripe = require("stripe");
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // =====================================
-// 💳 COLOQUE AQUI OS PRICE_ID REAIS
+// 💳 PLANOS (VIA ENV - PROFISSIONAL)
 // =====================================
 const PLANS = {
-  basic: "price_UIHjyd10kIT1lM",
-  pro: "price_UIHlvn9JgGQmoU",
-  premium: "price_UIHn2egRa48BCB"
+  basic: process.env.STRIPE_PRICE_BASIC,
+  pro: process.env.STRIPE_PRICE_PRO,
+  premium: process.env.STRIPE_PRICE_PREMIUM
 };
 
 // =====================================
@@ -29,8 +29,15 @@ router.get("/checkout", async (req, res) => {
 
     const priceId = PLANS[plan];
 
+    // 🔥 LOG PRA DEBUG REAL
+    console.log("Plano solicitado:", plan);
+    console.log("Price ID usado:", priceId);
+
     if (!priceId) {
-      return res.status(400).json({ error: "Plano inválido" });
+      return res.status(400).json({
+        error: "Plano inválido ou não configurado",
+        planRecebido: plan
+      });
     }
 
     const session = await stripe.checkout.sessions.create({
@@ -56,16 +63,18 @@ router.get("/checkout", async (req, res) => {
       }
     });
 
-    console.log("💳 Checkout OK:", email, plan);
+    console.log("💳 Checkout criado com sucesso:", email, plan);
 
     res.json({ url: session.url });
 
   } catch (err) {
-    console.log("❌ ERRO STRIPE:", err);
+
+    console.log("❌ ERRO STRIPE COMPLETO:");
+    console.log(err);
 
     res.status(500).json({
       error: "Erro ao criar assinatura",
-      detalhe: err.message // 🔥 AGORA VOCÊ VÊ O ERRO REAL
+      detalhe: err.message
     });
   }
 });
