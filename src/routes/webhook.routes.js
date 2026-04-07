@@ -7,7 +7,7 @@ const User = require("../models/User");
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // =====================================
-// 🔔 WEBHOOK STRIPE (VERSÃO PROFISSIONAL)
+// 🔔 WEBHOOK STRIPE (NÍVEL PRODUÇÃO)
 // =====================================
 router.post(
   "/",
@@ -17,9 +17,9 @@ router.post(
     let event;
 
     try {
+
       const sig = req.headers["stripe-signature"];
 
-      // 🔐 valida assinatura Stripe
       event = stripe.webhooks.constructEvent(
         req.body,
         sig,
@@ -27,44 +27,34 @@ router.post(
       );
 
     } catch (err) {
-      console.log("❌ ERRO ASSINATURA STRIPE:", err.message);
+
+      console.log("❌ ERRO ASSINATURA:", err.message);
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
     try {
 
-      console.log("📩 Evento recebido:", event.type);
+      console.log("📩 Evento:", event.type);
 
       // =====================================
-      // 💰 PAGAMENTO / ASSINATURA CONFIRMADA
+      // 💰 CHECKOUT CONCLUÍDO
       // =====================================
-      if (
-        event.type === "checkout.session.completed" ||
-        event.type === "invoice.payment_succeeded"
-      ) {
+      if (event.type === "checkout.session.completed") {
 
-        const data = event.data.object;
+        const session = event.data.object;
 
-        // 🔥 PEGA EMAIL EM TODOS OS CASOS (checkout + assinatura)
         let email =
-          data.metadata?.email ||
-          data.customer_email ||
-          data.customer_details?.email;
+          session.metadata?.email ||
+          session.customer_email ||
+          session.customer_details?.email;
 
-        // 🔥 PEGA PLANO COM FALLBACK
-        let plan = data.metadata?.plan || "premium";
+        let plan = session.metadata?.plan || "premium";
 
-        // 🔐 NORMALIZA EMAIL
-        if (email) {
-          email = email.toLowerCase().trim();
-        }
+        if (email) email = email.toLowerCase().trim();
 
-        console.log("💳 Pagamento confirmado:", email, plan);
+        console.log("💳 Checkout:", email, plan);
 
-        if (!email) {
-          console.log("❌ Email não encontrado");
-          return res.sendStatus(200);
-        }
+        if (!email) return res.sendStatus(200);
 
         const user = await User.findOne({ email });
 
@@ -73,38 +63,67 @@ router.post(
           return res.sendStatus(200);
         }
 
-        // =====================================
-        // 🔥 ATUALIZA VIP (SEM BUG)
-        // =====================================
+        // 🔥 salva customerId (CRÍTICO)
+        user.stripeCustomerId = session.customer;
+
         user.isVIP = true;
         user.plan = plan;
 
         await user.save();
 
-        console.log("🔥 VIP ATUALIZADO COM SUCESSO:", email, plan);
+        console.log("🔥 VIP ATIVADO:", email);
       }
 
       // =====================================
-      // ❌ CANCELAMENTO DE ASSINATURA (IMPORTANTE)
+      // 🔁 RENOVAÇÃO DE ASSINATURA
+      // =====================================
+      if (event.type === "invoice.payment_succeeded") {
+
+        const invoice = event.data.object;
+
+        const customerId = invoice.customer;
+
+        if (!customerId) return res.sendStatus(200);
+
+        const user = await User.findOne({
+          stripeCustomerId: customerId
+        });
+
+        if (!user) {
+          console.log("❌ Cliente não encontrado:", customerId);
+          return res.sendStatus(200);
+        }
+
+        user.isVIP = true;
+
+        await user.save();
+
+        console.log("🔁 Assinatura renovada:", user.email);
+      }
+
+      // =====================================
+      // ❌ CANCELAMENTO
       // =====================================
       if (event.type === "customer.subscription.deleted") {
 
         const subscription = event.data.object;
 
-        const email = subscription.customer_email;
+        const customerId = subscription.customer;
 
-        if (!email) return res.sendStatus(200);
+        if (!customerId) return res.sendStatus(200);
 
-        const user = await User.findOne({ email });
+        const user = await User.findOne({
+          stripeCustomerId: customerId
+        });
 
-        if (user) {
-          user.isVIP = false;
-          user.plan = "free";
+        if (!user) return res.sendStatus(200);
 
-          await user.save();
+        user.isVIP = false;
+        user.plan = "free";
 
-          console.log("❌ VIP CANCELADO:", email);
-        }
+        await user.save();
+
+        console.log("❌ Assinatura cancelada:", user.email);
       }
 
       res.sendStatus(200);
