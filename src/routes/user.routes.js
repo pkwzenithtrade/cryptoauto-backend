@@ -4,17 +4,16 @@ const User = require("../models/User");
 const { scanOpportunities } = require("../ai/opportunityHunter");
 
 // =====================================
-// 🔥 OPORTUNIDADES POR PLANO (FREE → PREMIUM)
+// 🔥 OPORTUNIDADES POR PLANO
 // =====================================
 router.get("/opportunities", async (req, res) => {
   try {
 
     let { email } = req.query;
 
-    let limit = 2; // FREE padrão
+    let limit = 2;
     let plan = "free";
 
-    // 🔐 NORMALIZA EMAIL
     if (email) {
       email = email.toLowerCase().trim();
 
@@ -52,7 +51,49 @@ router.get("/opportunities", async (req, res) => {
 
 
 // =====================================
-// 🔐 STATUS DO USUÁRIO (VIP / PLANO)
+// 🔥 VIP (PADRÃO USADO NO APP)
+// =====================================
+router.get("/vip", async (req, res) => {
+  try {
+
+    let { email } = req.query;
+
+    if (!email) {
+      return res.status(400).json({
+        error: "Email obrigatório"
+      });
+    }
+
+    email = email.toLowerCase().trim();
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.json({
+        vip: false,
+        plan: "free"
+      });
+    }
+
+    res.json({
+      vip: user.isVIP || false,
+      plan: user.plan || "free"
+    });
+
+  } catch (error) {
+
+    console.error("❌ ERRO VIP:", error.message);
+
+    res.status(500).json({
+      error: "Erro ao verificar VIP"
+    });
+
+  }
+});
+
+
+// =====================================
+// 🔥 STATUS (MANTIDO PARA FUTURO)
 // =====================================
 router.get("/status", async (req, res) => {
   try {
@@ -94,7 +135,7 @@ router.get("/status", async (req, res) => {
 
 
 // =====================================
-// 🔥 DADOS DO USUÁRIO (PREPARADO PRA DASHBOARD)
+// 🔥 PROFILE
 // =====================================
 router.get("/profile", async (req, res) => {
   try {
