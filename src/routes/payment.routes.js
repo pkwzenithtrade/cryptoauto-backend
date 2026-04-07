@@ -17,15 +17,23 @@ router.get("/checkout", async (req, res) => {
       return res.status(400).json({ error: "Email obrigatório" });
     }
 
-    // 🔥 PADRONIZA EMAIL (CRÍTICO)
+    // 🔥 NORMALIZA EMAIL
     email = email.toLowerCase().trim();
 
-    let price = 2900;
+    // 🔥 DEFINE PLANO PADRÃO
+    plan = plan || "basic";
+
+    // 💰 PREÇOS
+    let price = 2900; // R$29
 
     if (plan === "pro") price = 5900;
     if (plan === "premium") price = 9700;
 
+    // =====================================
+    // 🔥 CRIA SESSÃO STRIPE
+    // =====================================
     const session = await stripe.checkout.sessions.create({
+
       payment_method_types: ["card"],
 
       line_items: [
@@ -33,7 +41,7 @@ router.get("/checkout", async (req, res) => {
           price_data: {
             currency: "brl",
             product_data: {
-              name: `Plano ${plan || "basic"} CryptoAuto AI`
+              name: `Plano ${plan.toUpperCase()} CryptoAuto AI`
             },
             unit_amount: price
           },
@@ -43,19 +51,21 @@ router.get("/checkout", async (req, res) => {
 
       mode: "payment",
 
-      success_url: "https://cryptoauto-backend.onrender.com",
-cancel_url: "https://cryptoauto-backend.onrender.com",
+      // 🔥 URLs CORRETAS (ESSENCIAL)
+      success_url: "https://cryptoauto-app.vercel.app?success=true",
+      cancel_url: "https://cryptoauto-app.vercel.app?cancel=true",
 
       customer_email: email,
 
-      // 🔥 METADATA CORRETO
+      // 🔥 METADATA (USADO NO WEBHOOK)
       metadata: {
         email: email,
-        plan: plan || "basic"
+        plan: plan
       }
+
     });
 
-    console.log("💳 Checkout criado:", email);
+    console.log("💳 Checkout criado:", email, plan);
 
     res.json({ url: session.url });
 
@@ -66,6 +76,7 @@ cancel_url: "https://cryptoauto-backend.onrender.com",
     res.status(500).json({
       error: "Erro ao criar pagamento"
     });
+
   }
 
 });
