@@ -7,7 +7,7 @@ const User = require("../models/User");
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // =====================================
-// 🔔 WEBHOOK STRIPE (100% FUNCIONAL)
+// 🔔 WEBHOOK STRIPE (VERSÃO PROFISSIONAL)
 // =====================================
 router.post(
   "/",
@@ -17,10 +17,9 @@ router.post(
     let event;
 
     try {
-
       const sig = req.headers["stripe-signature"];
 
-      // 🔐 valida assinatura
+      // 🔐 valida assinatura Stripe
       event = stripe.webhooks.constructEvent(
         req.body,
         sig,
@@ -28,7 +27,6 @@ router.post(
       );
 
     } catch (err) {
-
       console.log("❌ ERRO ASSINATURA STRIPE:", err.message);
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
@@ -38,29 +36,30 @@ router.post(
       console.log("📩 Evento recebido:", event.type);
 
       // =====================================
-      // 💰 PAGAMENTO CONFIRMADO
+      // 💰 PAGAMENTO / ASSINATURA CONFIRMADA
       // =====================================
       if (
-  event.type === "checkout.session.completed" ||
-  event.type === "invoice.payment_succeeded"
-) {
+        event.type === "checkout.session.completed" ||
+        event.type === "invoice.payment_succeeded"
+      ) {
 
-        const session = event.data.object;
+        const data = event.data.object;
 
-        // 🔥 pega email com fallback (CRÍTICO)
+        // 🔥 PEGA EMAIL EM TODOS OS CASOS (checkout + assinatura)
         let email =
-          session.metadata?.email ||
-          session.customer_email ||
-          session.customer_details?.email;
+          data.metadata?.email ||
+          data.customer_email ||
+          data.customer_details?.email;
 
-        const plan = session.metadata?.plan;
+        // 🔥 PEGA PLANO COM FALLBACK
+        let plan = data.metadata?.plan || "premium";
 
-        // 🔥 padroniza email
+        // 🔐 NORMALIZA EMAIL
         if (email) {
           email = email.toLowerCase().trim();
         }
 
-        console.log("💳 Pagamento aprovado:", email, plan);
+        console.log("💳 Pagamento confirmado:", email, plan);
 
         if (!email) {
           console.log("❌ Email não encontrado");
@@ -75,14 +74,37 @@ router.post(
         }
 
         // =====================================
-        // 🔥 LIBERA VIP
+        // 🔥 ATUALIZA VIP (SEM BUG)
         // =====================================
         user.isVIP = true;
-        user.plan = plan || "premium";
+        user.plan = plan;
 
         await user.save();
 
-        console.log("🔥 VIP LIBERADO COM SUCESSO:", email);
+        console.log("🔥 VIP ATUALIZADO COM SUCESSO:", email, plan);
+      }
+
+      // =====================================
+      // ❌ CANCELAMENTO DE ASSINATURA (IMPORTANTE)
+      // =====================================
+      if (event.type === "customer.subscription.deleted") {
+
+        const subscription = event.data.object;
+
+        const email = subscription.customer_email;
+
+        if (!email) return res.sendStatus(200);
+
+        const user = await User.findOne({ email });
+
+        if (user) {
+          user.isVIP = false;
+          user.plan = "free";
+
+          await user.save();
+
+          console.log("❌ VIP CANCELADO:", email);
+        }
       }
 
       res.sendStatus(200);
