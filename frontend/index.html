@@ -39,6 +39,18 @@ button {
   margin: 10px;
   font-weight: bold;
 }
+
+.success {
+  color: #22c55e;
+  font-size: 20px;
+  margin-top: 20px;
+}
+
+.cancel {
+  color: red;
+  font-size: 20px;
+  margin-top: 20px;
+}
 </style>
 
 </head>
@@ -46,6 +58,8 @@ button {
 <body>
 
 <h1>🚀 CryptoAuto AI</h1>
+
+<div id="paymentMessage"></div>
 
 <button onclick="definirEmail()">👤 Entrar</button>
 <button onclick="loadOpportunities()">📊 Buscar sinais</button>
@@ -58,6 +72,38 @@ button {
 <div id="results">Nenhum dado carregado</div>
 
 <script src="app.js"></script>
+
+<script>
+
+// ===============================
+// 🔥 DETECTAR RETORNO DO STRIPE
+// ===============================
+const params = new URLSearchParams(window.location.search);
+const messageDiv = document.getElementById("paymentMessage");
+
+if (params.get("success")) {
+
+  messageDiv.innerHTML = `
+    <div class="success">
+      <h1>Pagamento aprovado ✅</h1>
+      <p>Você já é VIP. Volte ao app.</p>
+    </div>
+  `;
+
+}
+
+if (params.get("cancel")) {
+
+  messageDiv.innerHTML = `
+    <div class="cancel">
+      <h1>Pagamento cancelado ❌</h1>
+      <p>Tente novamente.</p>
+    </div>
+  `;
+
+}
+
+</script>
 
 </body>
 </html>
