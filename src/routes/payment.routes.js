@@ -11,9 +11,9 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 // basic, pro, premium (recorrente mensal)
 
 const PLANS = {
-  basic: "price_BASIC_ID_AQUI",
-  pro: "price_PRO_ID_AQUI",
-  premium: "price_PREMIUM_ID_AQUI"
+  basic: "price_prod_UIHjyd10kIT1lM",
+  pro: "price_prod_UIHlvn9JgGQmoU",
+  premium: "price_prod_UIHn2egRa48BCB"
 };
 
 // =====================================
