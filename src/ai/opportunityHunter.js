@@ -11,8 +11,7 @@ const COINS_CONFIG = {
   DOT: { name: "Polkadot", buyBelow: 5, sellAbove: 25 }
 };
 
-
-// BUSCAR PREÇOS DA KRAKEN (COM PROTEÇÃO)
+// BUSCAR PREÇOS
 async function getMarketPrices() {
   try {
 
@@ -36,12 +35,10 @@ async function getMarketPrices() {
   } catch (error) {
 
     console.log("Erro ao buscar preços:", error.message);
-
-    return null; // 🔥 MUDANÇA IMPORTANTE
+    return null;
 
   }
 }
-
 
 // CALCULAR SCORE
 function calculateScore(price, buyBelow, sellAbove) {
@@ -59,31 +56,26 @@ function calculateScore(price, buyBelow, sellAbove) {
   return 0;
 }
 
-
-// SCANNER DE OPORTUNIDADES
+// SCANNER
 async function scanOpportunities() {
 
   try {
 
     const prices = await getMarketPrices();
 
-    // 🔥 FALLBACK SE API FALHAR
     if (!prices) {
-      return [
-        {
-          coin: "BTC",
-          name: "Bitcoin",
-          price: 70000,
-          signal: "HOLD",
-          confidence: 50,
-          score: 0
-        }
-      ];
+      return [{
+        coin: "BTC",
+        name: "Bitcoin",
+        price: 70000,
+        signal: "HOLD",
+        confidence: 50,
+        score: 0
+      }];
     }
 
     const opportunities = [];
 
-    // 🔥 TENDÊNCIA DO BTC
     const btcPrice = prices.BTC;
     const btcRules = COINS_CONFIG.BTC;
 
@@ -104,7 +96,6 @@ async function scanOpportunities() {
       if (price < rules.buyBelow) signal = "BUY";
       else if (price > rules.sellAbove) signal = "SELL";
 
-      // 🔥 BLOQUEIO INTELIGENTE
       if (btcTrend === "SELL" && signal === "BUY" && coin !== "BTC") {
         signal = "HOLD";
       }
@@ -131,44 +122,38 @@ async function scanOpportunities() {
         confidence,
         score: Number(score.toFixed(2))
       });
-
     }
 
-    // 🔥 GARANTE QUE NUNCA FIQUE VAZIO
     if (opportunities.length === 0) {
-      return [
-        {
-          coin: "BTC",
-          name: "Bitcoin",
-          price: btcPrice || 70000,
-          signal: "HOLD",
-          confidence: 50,
-          score: 0
-        }
-      ];
+      return [{
+        coin: "BTC",
+        name: "Bitcoin",
+        price: btcPrice || 70000,
+        signal: "HOLD",
+        confidence: 50,
+        score: 0
+      }];
     }
 
+    // 🔥 ORDENA
     opportunities.sort((a, b) => b.score - a.score);
 
-    return opportunities.slice(0, 5);
+    // 🔥 NÃO LIMITA MAIS AQUI (CRÍTICO)
+    return opportunities;
 
   } catch (error) {
 
     console.log("Erro no Opportunity Hunter:", error.message);
 
-    return [
-      {
-        coin: "BTC",
-        name: "Bitcoin",
-        price: 70000,
-        signal: "HOLD",
-        confidence: 50,
-        score: 0
-      }
-    ];
-
+    return [{
+      coin: "BTC",
+      name: "Bitcoin",
+      price: 70000,
+      signal: "HOLD",
+      confidence: 50,
+      score: 0
+    }];
   }
-
 }
 
 module.exports = {
