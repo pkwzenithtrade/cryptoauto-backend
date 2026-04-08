@@ -7,7 +7,7 @@ const User = require("../models/User");
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // =====================================
-// 🔔 WEBHOOK STRIPE (NÍVEL PRODUÇÃO)
+// 🔔 WEBHOOK STRIPE (VERSÃO FINAL PROFISSIONAL)
 // =====================================
 router.post(
   "/",
@@ -17,7 +17,6 @@ router.post(
     let event;
 
     try {
-
       const sig = req.headers["stripe-signature"];
 
       event = stripe.webhooks.constructEvent(
@@ -27,7 +26,6 @@ router.post(
       );
 
     } catch (err) {
-
       console.log("❌ ERRO ASSINATURA:", err.message);
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
@@ -52,8 +50,6 @@ router.post(
 
         if (email) email = email.toLowerCase().trim();
 
-        console.log("💳 Checkout:", email, plan);
-
         if (!email) return res.sendStatus(200);
 
         const user = await User.findOne({ email });
@@ -63,24 +59,38 @@ router.post(
           return res.sendStatus(200);
         }
 
-        // 🔥 salva customerId (CRÍTICO)
-        user.stripeCustomerId = session.customer;
+        // 🔥 GARANTE CUSTOMER ID
+        let customerId = session.customer;
+
+        if (!customerId && session.customer_details?.email) {
+          const customers = await stripe.customers.list({
+            email: session.customer_details.email,
+            limit: 1
+          });
+
+          if (customers.data.length > 0) {
+            customerId = customers.data[0].id;
+          }
+        }
+
+        if (customerId) {
+          user.stripeCustomerId = customerId;
+        }
 
         user.isVIP = true;
         user.plan = plan;
 
         await user.save();
 
-        console.log("🔥 VIP ATIVADO:", email);
+        console.log("🔥 VIP ATIVADO:", email, plan);
       }
 
       // =====================================
-      // 🔁 RENOVAÇÃO DE ASSINATURA
+      // 🔁 RENOVAÇÃO
       // =====================================
       if (event.type === "invoice.payment_succeeded") {
 
         const invoice = event.data.object;
-
         const customerId = invoice.customer;
 
         if (!customerId) return res.sendStatus(200);
@@ -98,7 +108,7 @@ router.post(
 
         await user.save();
 
-        console.log("🔁 Assinatura renovada:", user.email);
+        console.log("🔁 Renovado:", user.email);
       }
 
       // =====================================
@@ -107,7 +117,6 @@ router.post(
       if (event.type === "customer.subscription.deleted") {
 
         const subscription = event.data.object;
-
         const customerId = subscription.customer;
 
         if (!customerId) return res.sendStatus(200);
@@ -123,13 +132,12 @@ router.post(
 
         await user.save();
 
-        console.log("❌ Assinatura cancelada:", user.email);
+        console.log("❌ Cancelado:", user.email);
       }
 
       res.sendStatus(200);
 
     } catch (err) {
-
       console.log("❌ ERRO PROCESSAMENTO:", err.message);
       res.sendStatus(500);
     }
