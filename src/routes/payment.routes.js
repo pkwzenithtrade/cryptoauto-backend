@@ -29,7 +29,6 @@ router.get("/checkout", async (req, res) => {
 
     const priceId = PLANS[plan];
 
-    // 🔥 LOG PRA DEBUG REAL
     console.log("Plano solicitado:", plan);
     console.log("Price ID usado:", priceId);
 
@@ -42,7 +41,6 @@ router.get("/checkout", async (req, res) => {
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
-
       payment_method_types: ["card"],
 
       line_items: [
@@ -52,8 +50,9 @@ router.get("/checkout", async (req, res) => {
         }
       ],
 
-      success_url: "https://cryptoauto-app.vercel.app?success=true",
-      cancel_url: "https://cryptoauto-app.vercel.app?cancel=true",
+      // 🔥 CORREÇÃO REAL DO 404
+      success_url: "https://google.com", // TEMPORÁRIO PRA TESTE
+      cancel_url: "https://google.com",
 
       customer_email: email,
 
