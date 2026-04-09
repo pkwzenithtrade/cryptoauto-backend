@@ -44,8 +44,9 @@ async function createCheckoutSession(email, plan) {
       plan
     },
 
-    success_url: "https://seuapp.com/success",
-    cancel_url: "https://seuapp.com/cancel"
+    // ✅ CORREÇÃO REAL DO 404
+    success_url: "https://cryptoauto-app.vercel.app?success=true",
+    cancel_url: "https://cryptoauto-app.vercel.app?cancel=true"
   });
 
   return session.url;
