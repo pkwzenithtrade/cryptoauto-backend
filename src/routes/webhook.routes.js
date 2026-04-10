@@ -7,7 +7,7 @@ const User = require("../models/User");
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // =====================================
-// 🔔 WEBHOOK STRIPE (VERSÃO FINAL PROFISSIONAL)
+// 🔔 WEBHOOK STRIPE (VERSÃO FINAL ESTÁVEL)
 // =====================================
 router.post(
   "/",
@@ -41,16 +41,24 @@ router.post(
 
         const session = event.data.object;
 
-        let email =
-          session.metadata?.email ||
-          session.customer_email ||
-          session.customer_details?.email;
+        let email = session.metadata?.email;
 
         let plan = session.metadata?.plan || "premium";
 
+        // 🔥 FALLBACK PROFISSIONAL (GARANTE EMAIL)
+        if (!email && session.customer) {
+          const customer = await stripe.customers.retrieve(session.customer);
+          email = customer.email;
+        }
+
         if (email) email = email.toLowerCase().trim();
 
-        if (!email) return res.sendStatus(200);
+        console.log("💳 Checkout:", email, plan);
+
+        if (!email) {
+          console.log("❌ Email não encontrado");
+          return res.sendStatus(200);
+        }
 
         const user = await User.findOne({ email });
 
@@ -59,22 +67,9 @@ router.post(
           return res.sendStatus(200);
         }
 
-        // 🔥 GARANTE CUSTOMER ID
-        let customerId = session.customer;
-
-        if (!customerId && session.customer_details?.email) {
-          const customers = await stripe.customers.list({
-            email: session.customer_details.email,
-            limit: 1
-          });
-
-          if (customers.data.length > 0) {
-            customerId = customers.data[0].id;
-          }
-        }
-
-        if (customerId) {
-          user.stripeCustomerId = customerId;
+        // 🔥 SALVA CUSTOMER ID (IMPORTANTE PRA RENOVAÇÃO)
+        if (session.customer) {
+          user.stripeCustomerId = session.customer;
         }
 
         user.isVIP = true;
