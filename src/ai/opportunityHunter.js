@@ -84,6 +84,7 @@ async function scanOpportunities() {
     if (btcPrice > btcRules.sellAbove) btcTrend = "SELL";
     else if (btcPrice < btcRules.buyBelow) btcTrend = "BUY";
 
+    // 🔥 LOOP CORRETO
     for (const coin in COINS_CONFIG) {
 
       const rules = COINS_CONFIG[coin];
@@ -115,12 +116,12 @@ async function scanOpportunities() {
       confidence = Number(confidence.toFixed(2));
 
       opportunities.push({
-        coin,
-        name: rules.name,
-        price: Number(price),
-        signal,
-        confidence,
-        score: Number(score.toFixed(2))
+        coin: String(coin),
+        name: String(rules.name),
+        price: Number(price) || 0,
+        signal: String(signal).replace(/[^A-Z]/g, ""),
+        confidence: Number(confidence) || 0,
+        score: Number(score.toFixed(2)) || 0
       });
     }
 
@@ -138,8 +139,17 @@ async function scanOpportunities() {
     // 🔥 ORDENA
     opportunities.sort((a, b) => b.score - a.score);
 
-    // 🔥 NÃO LIMITA MAIS AQUI (CRÍTICO)
-    return opportunities;
+    // 🔥 FILTRA DADOS QUEBRADOS
+    const safeData = opportunities.filter(item =>
+      item &&
+      item.coin &&
+      item.name &&
+      typeof item.price === "number" &&
+      item.signal &&
+      !isNaN(item.confidence)
+    );
+
+    return safeData;
 
   } catch (error) {
 
