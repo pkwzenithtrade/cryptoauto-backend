@@ -3,38 +3,35 @@ const Stripe = require("stripe");
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // =====================================
-// 🔥 CRIAR CHECKOUT
+// 💳 PLANOS VIA ENV (IGUAL AO BACKEND)
 // =====================================
-async function createCheckoutSession(email, plan) {
+const PLANS = {
+  basic: process.env.STRIPE_PRICE_BASIC,
+  pro: process.env.STRIPE_PRICE_PRO,
+  premium: process.env.STRIPE_PRICE_PREMIUM
+};
 
-  let price = 2900; // centavos
-  let name = "Plano Basic";
+// =====================================
+// 🔥 CRIAR CHECKOUT (CORRIGIDO)
+// =====================================
+async function createCheckoutSession(email, plan = "basic") {
 
-  if (plan === "pro") {
-    price = 5900;
-    name = "Plano Pro";
-  }
+  const priceId = PLANS[plan];
 
-  if (plan === "premium") {
-    price = 9700;
-    name = "Plano Premium";
+  if (!priceId) {
+    throw new Error("Plano inválido ou não configurado");
   }
 
   const session = await stripe.checkout.sessions.create({
+    mode: "subscription",
+
     payment_method_types: ["card"],
-    mode: "payment",
 
     customer_email: email,
 
     line_items: [
       {
-        price_data: {
-          currency: "brl",
-          product_data: {
-            name
-          },
-          unit_amount: price
-        },
+        price: priceId,
         quantity: 1
       }
     ],
@@ -44,10 +41,10 @@ async function createCheckoutSession(email, plan) {
       plan
     },
 
-    // ✅ CORREÇÃO REAL DO 404
-    success_url: "https://cryptoauto-app.vercel.app?success=true",
-    cancel_url: "https://cryptoauto-app.vercel.app?cancel=true"
-  });
+    // 🔥 teste temporário (depois volta pro Vercel)
+    success_url: "https://google.com",
+    cancel_url: "https://google.com"
+  }); // ✅ FECHAMENTO QUE FALTAVA
 
   return session.url;
 }
