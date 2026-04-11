@@ -41,11 +41,15 @@ router.post(
 
         const session = event.data.object;
 
-        let email = session.metadata?.email;
+        // 🔥 CORREÇÃO REAL (fallback completo)
+        let email =
+          session.metadata?.email ||
+          session.customer_email ||
+          session.customer_details?.email;
 
         let plan = session.metadata?.plan || "premium";
 
-        // 🔥 FALLBACK PROFISSIONAL (GARANTE EMAIL)
+        // 🔥 fallback extra via Stripe
         if (!email && session.customer) {
           const customer = await stripe.customers.retrieve(session.customer);
           email = customer.email;
