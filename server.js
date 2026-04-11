@@ -28,10 +28,9 @@ const authMiddleware = require("./src/middleware/auth.middleware");
 const app = express();
 
 // =====================================
-// 🚨 STRIPE WEBHOOK (ANTES DO JSON)
+// 🚨 STRIPE WEBHOOK (CORREÇÃO REAL)
 // =====================================
-app.use("/webhook", express.raw({ type: "application/json" }));
-app.use("/webhook", webhookRoutes);
+app.use("/webhook", webhookRoutes); // 🔥 remove o raw daqui
 
 // =====================================
 // 🔥 MIDDLEWARES NORMAIS
