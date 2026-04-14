@@ -30,7 +30,7 @@ const app = express();
 // =====================================
 // 🚨 STRIPE WEBHOOK (CORREÇÃO REAL)
 // =====================================
-app.use("/webhook", webhookRoutes); // 🔥 remove o raw daqui
+app.use("/webhook", webhookRoutes); // 🔥 correto
 
 // =====================================
 // 🔥 MIDDLEWARES NORMAIS
@@ -72,7 +72,7 @@ app.get("/ai/opportunities-public", async (req, res) => {
 });
 
 // =====================================
-// 🔐 CHECK VIP (PADRÃO DO APP)
+// 🔐 CHECK VIP (CORRIGIDO)
 // =====================================
 app.get("/auth/check-vip", async (req, res) => {
 
@@ -81,16 +81,16 @@ app.get("/auth/check-vip", async (req, res) => {
     const user = await User.findOne({ email: req.query.email });
 
     if (!user) {
-      return res.json({ isVIP: false, plan: "free" });
+      return res.json({ vip: false, plan: "free" }); // 🔥 corrigido
     }
 
     res.json({
-      isVIP: user.isVIP || false,
+      vip: user.isVIP || false, // 🔥 corrigido
       plan: user.plan || "free"
     });
 
   } catch {
-    res.json({ isVIP: false });
+    res.json({ vip: false });
   }
 
 });
