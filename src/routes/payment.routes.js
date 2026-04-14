@@ -51,8 +51,8 @@ router.get("/checkout", async (req, res) => {
       ],
 
       // 🔥 CORREÇÃO REAL DO 404
-      success_url: "https://google.com", // TEMPORÁRIO PRA TESTE
-      cancel_url: "https://google.com",
+      success_url: "https://cryptoauto-app.vercel.app?success=true",
+cancel_url: "https://cryptoauto-app.vercel.app?cancel=true"
 
       customer_email: email,
 
