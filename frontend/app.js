@@ -1,7 +1,7 @@
 const API = "https://cryptoauto-backend.onrender.com";
 
 let userEmail = localStorage.getItem("email") || null;
-let isVIP = false;
+let isVIP = localStorage.getItem("vip") === "true";
 
 // ===============================
 // 👤 DEFINIR EMAIL
@@ -17,6 +17,8 @@ function definirEmail() {
 
   localStorage.setItem("email", email.toLowerCase());
   userEmail = email.toLowerCase();
+
+  document.getElementById("status").innerHTML = "Carregando conta...";
 
   verificarVIP();
 }
@@ -36,9 +38,23 @@ async function verificarVIP() {
 
     const data = await res.json();
 
-    isVIP = data.isVIP || false;
+    isVIP = data.vip || false;
 
+    localStorage.setItem("vip", isVIP);
+    localStorage.setItem("plan", data.plan || "free");
+
+    console.log("Usuário atual:", userEmail);
     console.log("VIP:", isVIP);
+
+    const status = document.getElementById("status");
+
+    if (isVIP) {
+      status.innerHTML = "🔥 Conta VIP ativa";
+      status.style.color = "#22c55e";
+    } else {
+      status.innerHTML = "Plano Free";
+      status.style.color = "#fff";
+    }
 
   } catch (error) {
     console.log("Erro ao verificar VIP");
@@ -53,7 +69,9 @@ async function loadOpportunities() {
 
   try {
 
-    await verificarVIP(); // 🔥 sempre atualiza VIP
+    document.getElementById("results").innerHTML = "Carregando sinais...";
+
+    await verificarVIP();
 
     const url = isVIP
       ? API + "/user/opportunities?email=" + encodeURIComponent(userEmail)
@@ -74,7 +92,7 @@ async function loadOpportunities() {
 
     coins.forEach((coin, index) => {
 
-      const locked = !isVIP && index > 0; // 🔥 trava mais cedo
+      const locked = !isVIP && index > 0;
 
       const div = document.createElement("div");
 
@@ -106,7 +124,7 @@ async function loadOpportunities() {
     });
 
     // ===============================
-    // 🔥 BLOCO DE VENDA (MELHORADO)
+    // 🔥 BLOCO DE VENDA
     // ===============================
     if (!isVIP) {
 
@@ -133,7 +151,7 @@ async function loadOpportunities() {
 }
 
 // ===============================
-// 💳 STRIPE CHECKOUT (CORRIGIDO)
+// 💳 STRIPE CHECKOUT
 // ===============================
 async function comprarPlano(plano) {
 
@@ -168,17 +186,28 @@ async function comprarPlano(plano) {
 }
 
 // ===============================
-// 🔄 AUTO CHECK VIP (TEMPO REAL)
+// 🔄 AUTO CHECK VIP
 // ===============================
 setInterval(() => {
   if (userEmail) {
     verificarVIP();
   }
-}, 5000);
+}, 30000);
 
 // ===============================
 // 🔥 AUTO LOGIN
 // ===============================
 if (userEmail) {
+
+  const status = document.getElementById("status");
+
+  if (isVIP) {
+    status.innerHTML = "🔥 Conta VIP ativa";
+    status.style.color = "#22c55e";
+  } else {
+    status.innerHTML = "Plano Free";
+    status.style.color = "#fff";
+  }
+
   verificarVIP();
 }
