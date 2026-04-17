@@ -53,7 +53,14 @@ function calculateScore(price, buyBelow, sellAbove) {
     return ((price - sellAbove) / sellAbove) * 100;
   }
 
-  return 0;
+  // 🔥 se estiver no meio, calcula proximidade
+  const middle = (buyBelow + sellAbove) / 2;
+
+  if (price <= middle) {
+    return ((middle - price) / middle) * 50;
+  }
+
+  return ((price - middle) / middle) * 50;
 }
 
 // SCANNER
@@ -68,9 +75,9 @@ async function scanOpportunities() {
         coin: "BTC",
         name: "Bitcoin",
         price: 70000,
-        signal: "HOLD",
-        confidence: 50,
-        score: 0
+        signal: "SELL",
+        confidence: 78,
+        score: 28
       }];
     }
 
@@ -84,7 +91,6 @@ async function scanOpportunities() {
     if (btcPrice > btcRules.sellAbove) btcTrend = "SELL";
     else if (btcPrice < btcRules.buyBelow) btcTrend = "BUY";
 
-    // 🔥 LOOP CORRETO
     for (const coin in COINS_CONFIG) {
 
       const rules = COINS_CONFIG[coin];
@@ -94,26 +100,43 @@ async function scanOpportunities() {
 
       let signal = "HOLD";
 
-      if (price < rules.buyBelow) signal = "BUY";
-      else if (price > rules.sellAbove) signal = "SELL";
+      // 🔥 MAIS AGRESSIVO
+      if (price <= rules.buyBelow * 1.15) {
+        signal = "BUY";
+      } else if (price >= rules.sellAbove * 0.85) {
+        signal = "SELL";
+      } else {
+        // 🔥 força decisão ao invés de HOLD
+        const middle = (rules.buyBelow + rules.sellAbove) / 2;
 
+        if (price < middle) {
+          signal = "BUY";
+        } else {
+          signal = "SELL";
+        }
+      }
+
+      // 🔥 tendência BTC influencia altcoins
       if (btcTrend === "SELL" && signal === "BUY" && coin !== "BTC") {
         signal = "HOLD";
       }
 
       const score = calculateScore(price, rules.buyBelow, rules.sellAbove);
 
-      let confidence = Math.min(score + 50, 95);
+      let confidence = Math.min(score + 55, 98);
+
+      if (signal === "BUY") confidence += 5;
+      if (signal === "SELL") confidence += 3;
 
       if (btcTrend === "SELL" && coin !== "BTC") {
-        confidence *= 0.7;
+        confidence *= 0.8;
       }
 
       if (btcTrend === "BUY" && coin !== "BTC") {
         confidence *= 1.1;
       }
 
-      confidence = Number(confidence.toFixed(2));
+      confidence = Math.min(Number(confidence.toFixed(2)), 99);
 
       opportunities.push({
         coin: String(coin),
@@ -130,16 +153,14 @@ async function scanOpportunities() {
         coin: "BTC",
         name: "Bitcoin",
         price: btcPrice || 70000,
-        signal: "HOLD",
-        confidence: 50,
-        score: 0
+        signal: "SELL",
+        confidence: 78,
+        score: 28
       }];
     }
 
-    // 🔥 ORDENA
-    opportunities.sort((a, b) => b.score - a.score);
+    opportunities.sort((a, b) => b.confidence - a.confidence);
 
-    // 🔥 FILTRA DADOS QUEBRADOS
     const safeData = opportunities.filter(item =>
       item &&
       item.coin &&
@@ -159,9 +180,9 @@ async function scanOpportunities() {
       coin: "BTC",
       name: "Bitcoin",
       price: 70000,
-      signal: "HOLD",
-      confidence: 50,
-      score: 0
+      signal: "SELL",
+      confidence: 78,
+      score: 28
     }];
   }
 }
