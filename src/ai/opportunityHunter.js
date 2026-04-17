@@ -118,7 +118,7 @@ async function scanOpportunities() {
 
       // 🔥 tendência BTC influencia altcoins
       if (btcTrend === "SELL" && signal === "BUY" && coin !== "BTC") {
-        signal = "HOLD";
+      confidence *= 0.8;
       }
 
       const score = calculateScore(price, rules.buyBelow, rules.sellAbove);
