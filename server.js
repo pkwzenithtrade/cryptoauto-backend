@@ -103,6 +103,17 @@ app.get("/", (req, res) => {
 });
 
 // =====================================
+// ✅ PÁGINAS DE RETORNO STRIPE
+// =====================================
+app.get("/success", (req, res) => {
+  res.send("Pagamento realizado com sucesso! Você já pode voltar para o app.");
+});
+
+app.get("/cancel", (req, res) => {
+  res.send("Pagamento cancelado.");
+});
+
+// =====================================
 // 🚀 START
 // =====================================
 const PORT = process.env.PORT || 3000;
