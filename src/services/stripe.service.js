@@ -3,7 +3,7 @@ const Stripe = require("stripe");
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // =====================================
-// 💳 PLANOS VIA ENV (IGUAL AO BACKEND)
+// 💳 PLANOS VIA ENV
 // =====================================
 const PLANS = {
   basic: process.env.STRIPE_PRICE_BASIC,
@@ -12,7 +12,7 @@ const PLANS = {
 };
 
 // =====================================
-// 🔥 CRIAR CHECKOUT (CORRIGIDO)
+// 🔥 CRIAR CHECKOUT
 // =====================================
 async function createCheckoutSession(email, plan = "basic") {
 
@@ -41,10 +41,9 @@ async function createCheckoutSession(email, plan = "basic") {
       plan
     },
 
-    // 🔥 teste temporário (depois volta pro Vercel)
-    success_url: "https://google.com",
-    cancel_url: "https://google.com"
-  }); // ✅ FECHAMENTO QUE FALTAVA
+    success_url: "https://cryptoauto-backend.vercel.app/success",
+    cancel_url: "https://cryptoauto-backend.vercel.app/cancel"
+  });
 
   return session.url;
 }
