@@ -30,7 +30,7 @@ const app = express();
 // =====================================
 // 🚨 STRIPE WEBHOOK (CORREÇÃO REAL)
 // =====================================
-app.use("/webhook", webhookRoutes); // 🔥 correto
+app.use("/webhook", webhookRoutes);
 
 // =====================================
 // 🔥 MIDDLEWARES NORMAIS
@@ -72,7 +72,7 @@ app.get("/ai/opportunities-public", async (req, res) => {
 });
 
 // =====================================
-// 🔐 CHECK VIP (CORRIGIDO)
+// 🔐 CHECK VIP
 // =====================================
 app.get("/auth/check-vip", async (req, res) => {
 
@@ -81,16 +81,16 @@ app.get("/auth/check-vip", async (req, res) => {
     const user = await User.findOne({ email: req.query.email });
 
     if (!user) {
-      return res.json({ vip: false, plan: "free" }); // 🔥 corrigido
+      return res.json({ vip: false, plan: "free" });
     }
 
     res.json({
-      vip: user.isVIP || false, // 🔥 corrigido
+      vip: user.isVIP || false,
       plan: user.plan || "free"
     });
 
   } catch {
-    res.json({ vip: false });
+    res.json({ vip: false, plan: "free" });
   }
 
 });
@@ -135,9 +135,11 @@ async function startServer() {
 
     }, 120000);
 
-    app.listen(PORT, () => {
-      console.log(`🔥 Servidor rodando na porta ${PORT}`);
-    });
+    if (process.env.NODE_ENV !== "production") {
+      app.listen(PORT, () => {
+        console.log(`🔥 Servidor rodando na porta ${PORT}`);
+      });
+    }
 
   } catch (err) {
     console.log("❌ ERRO:", err.message);
@@ -146,3 +148,5 @@ async function startServer() {
 }
 
 startServer();
+
+module.exports = app;
