@@ -41,7 +41,6 @@ router.post(
 
         const session = event.data.object;
 
-        // 🔥 CORREÇÃO REAL (fallback completo)
         let email =
           session.metadata?.email ||
           session.customer_email ||
@@ -55,7 +54,9 @@ router.post(
           email = customer.email;
         }
 
-        if (email) email = email.toLowerCase().trim();
+        if (email) {
+          email = email.toLowerCase().trim();
+        }
 
         console.log("💳 Checkout:", email, plan);
 
@@ -71,9 +72,9 @@ router.post(
           return res.sendStatus(200);
         }
 
-        // 🔥 SALVA CUSTOMER ID (IMPORTANTE PRA RENOVAÇÃO)
+        // 🔥 salva customer do Stripe
         if (session.customer) {
-          user.stripeCustomerId = session.customer;
+          user.stripeCustomerId = String(session.customer);
         }
 
         user.isVIP = true;
@@ -92,10 +93,12 @@ router.post(
         const invoice = event.data.object;
         const customerId = invoice.customer;
 
-        if (!customerId) return res.sendStatus(200);
+        if (!customerId) {
+          return res.sendStatus(200);
+        }
 
         const user = await User.findOne({
-          stripeCustomerId: customerId
+          stripeCustomerId: String(customerId)
         });
 
         if (!user) {
@@ -113,32 +116,39 @@ router.post(
       // =====================================
       // ❌ CANCELAMENTO
       // =====================================
-      if (event.type === "customer.subscription.deleted") {
+      if (
+        event.type === "customer.subscription.deleted" ||
+        event.type === "invoice.payment_failed"
+      ) {
 
-        const subscription = event.data.object;
-        const customerId = subscription.customer;
+        const data = event.data.object;
+        const customerId = data.customer;
 
-        if (!customerId) return res.sendStatus(200);
+        if (!customerId) {
+          return res.sendStatus(200);
+        }
 
         const user = await User.findOne({
-          stripeCustomerId: customerId
+          stripeCustomerId: String(customerId)
         });
 
-        if (!user) return res.sendStatus(200);
+        if (!user) {
+          return res.sendStatus(200);
+        }
 
         user.isVIP = false;
         user.plan = "free";
 
         await user.save();
 
-        console.log("❌ Cancelado:", user.email);
+        console.log("❌ VIP REMOVIDO:", user.email);
       }
 
-      res.sendStatus(200);
+      return res.sendStatus(200);
 
     } catch (err) {
       console.log("❌ ERRO PROCESSAMENTO:", err.message);
-      res.sendStatus(500);
+      return res.sendStatus(500);
     }
   }
 );
