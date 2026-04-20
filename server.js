@@ -146,11 +146,9 @@ async function startServer() {
 
     }, 120000);
 
-    if (process.env.NODE_ENV !== "production") {
-      app.listen(PORT, () => {
-        console.log(`🔥 Servidor rodando na porta ${PORT}`);
-      });
-    }
+    app.listen(PORT, () => {
+  console.log(`🔥 Servidor rodando na porta ${PORT}`);
+});
 
   } catch (err) {
     console.log("❌ ERRO:", err.message);
