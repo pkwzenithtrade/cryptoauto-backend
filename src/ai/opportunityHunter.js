@@ -14,7 +14,6 @@ const COINS_CONFIG = {
 // BUSCAR PREÇOS
 async function getMarketPrices() {
   try {
-
     const response = await axios.get(
       "https://api.kraken.com/0/public/Ticker?pair=BTCUSD,ETHUSD,SOLUSD,LINKUSD,AVAXUSD,MATICUSD,DOTUSD",
       { timeout: 5000 }
@@ -33,16 +32,13 @@ async function getMarketPrices() {
     };
 
   } catch (error) {
-
     console.log("Erro ao buscar preços:", error.message);
     return null;
-
   }
 }
 
 // CALCULAR SCORE
 function calculateScore(price, buyBelow, sellAbove) {
-
   if (!price || isNaN(price)) return 0;
 
   if (price < buyBelow) {
@@ -105,21 +101,18 @@ async function scanOpportunities() {
         signal = "SELL";
       } else {
         const middle = (rules.buyBelow + rules.sellAbove) / 2;
-
-        if (price < middle) {
-          signal = "BUY";
-        } else {
-          signal = "SELL";
-        }
+        signal = price < middle ? "BUY" : "SELL";
       }
 
       const score = calculateScore(price, rules.buyBelow, rules.sellAbove);
 
+      // ✅ CORREÇÃO CRÍTICA → DECLARAR ANTES
       let confidence = Math.min(score + 55, 98);
 
       if (signal === "BUY") confidence += 5;
       if (signal === "SELL") confidence += 3;
 
+      // influência BTC
       if (btcTrend === "SELL" && coin !== "BTC") {
         confidence *= 0.8;
       }
@@ -134,8 +127,8 @@ async function scanOpportunities() {
         coin: String(coin),
         name: String(rules.name),
         price: Number(price) || 0,
-        signal: String(signal).replace(/[^A-Z]/g, ""),
-        confidence: Number(confidence) || 0,
+        signal: signal,
+        confidence: confidence,
         score: Number(score.toFixed(2)) || 0
       });
     }
@@ -153,16 +146,7 @@ async function scanOpportunities() {
 
     opportunities.sort((a, b) => b.confidence - a.confidence);
 
-    const safeData = opportunities.filter(item =>
-      item &&
-      item.coin &&
-      item.name &&
-      typeof item.price === "number" &&
-      item.signal &&
-      !isNaN(item.confidence)
-    );
-
-    return safeData;
+    return opportunities;
 
   } catch (error) {
 
