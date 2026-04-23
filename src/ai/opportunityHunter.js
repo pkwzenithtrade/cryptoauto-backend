@@ -53,7 +53,6 @@ function calculateScore(price, buyBelow, sellAbove) {
     return ((price - sellAbove) / sellAbove) * 100;
   }
 
-  // 🔥 se estiver no meio, calcula proximidade
   const middle = (buyBelow + sellAbove) / 2;
 
   if (price <= middle) {
@@ -100,13 +99,11 @@ async function scanOpportunities() {
 
       let signal = "HOLD";
 
-      // 🔥 MAIS AGRESSIVO
       if (price <= rules.buyBelow * 1.15) {
         signal = "BUY";
       } else if (price >= rules.sellAbove * 0.85) {
         signal = "SELL";
       } else {
-        // 🔥 força decisão ao invés de HOLD
         const middle = (rules.buyBelow + rules.sellAbove) / 2;
 
         if (price < middle) {
@@ -114,11 +111,6 @@ async function scanOpportunities() {
         } else {
           signal = "SELL";
         }
-      }
-
-      // 🔥 tendência BTC influencia altcoins
-      if (btcTrend === "SELL" && signal === "BUY" && coin !== "BTC") {
-      confidence *= 0.8;
       }
 
       const score = calculateScore(price, rules.buyBelow, rules.sellAbove);
