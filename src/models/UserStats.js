@@ -27,11 +27,19 @@ const UserStatsSchema = new mongoose.Schema({
     default: 0
   },
 
+  history: [
+    {
+      coin: String,
+      profit: Number,
+      confidence: Number,
+      time: String
+    }
+  ],
+
   lastUpdated: {
     type: Date,
     default: Date.now
   }
-
 });
 
 module.exports = mongoose.model("UserStats", UserStatsSchema);
