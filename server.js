@@ -29,12 +29,12 @@ const authMiddleware = require("./src/middleware/auth.middleware");
 const app = express();
 
 // =====================================
-// 🚨 STRIPE WEBHOOK (CORREÇÃO REAL)
+// 🚨 STRIPE WEBHOOK
 // =====================================
 app.use("/webhook", webhookRoutes);
 
 // =====================================
-// 🔥 MIDDLEWARES NORMAIS
+// 🔥 MIDDLEWARES
 // =====================================
 app.use(cors());
 app.use(express.json());
@@ -51,7 +51,7 @@ app.use("/user", userRoutes);
 let lastOpportunities = [];
 
 // =====================================
-// 🔓 FREE (GARANTE QUE SEMPRE TEM DADO)
+// 🔓 FREE
 // =====================================
 app.get("/ai/opportunities-public", async (req, res) => {
 
@@ -69,6 +69,94 @@ app.get("/ai/opportunities-public", async (req, res) => {
   res.json({
     data: lastOpportunities.slice(0, 2)
   });
+
+});
+
+// =====================================
+// 🔥 NOVO: USER OPPORTUNITIES (PRO)
+// =====================================
+app.get("/user/opportunities", async (req, res) => {
+
+  try {
+
+    const { email } = req.query;
+
+    if (!email) {
+      return res.status(400).json({ error: "Email obrigatório" });
+    }
+
+    // usa cache (mais rápido)
+    let data = lastOpportunities;
+
+    if (!data || data.length === 0) {
+      data = await scanOpportunities();
+    }
+
+    const best = data[0];
+
+    if (best) {
+
+      const profit = (best.confidence / 100) * 0.25 * 100;
+
+      let userStats = await UserStats.findOne({ email });
+
+      if (!userStats) {
+        userStats = new UserStats({ email });
+      }
+
+      userStats.totalProfit += profit;
+
+      userStats.history.unshift({
+        coin: best.coin,
+        profit: Number(profit.toFixed(2)),
+        confidence: best.confidence,
+        time: new Date().toLocaleTimeString()
+      });
+
+      userStats.history = userStats.history.slice(0, 50);
+
+      await userStats.save();
+    }
+
+    res.json({ data });
+
+  } catch (err) {
+    console.log("Erro opportunities:", err.message);
+    res.status(500).json({ error: "Erro interno" });
+  }
+
+});
+
+// =====================================
+// 🔥 NOVO: DASHBOARD USER
+// =====================================
+app.get("/user/stats", async (req, res) => {
+
+  try {
+
+    const { email } = req.query;
+
+    if (!email) {
+      return res.status(400).json({ error: "Email obrigatório" });
+    }
+
+    const stats = await UserStats.findOne({ email });
+
+    if (!stats) {
+      return res.json({
+        totalProfit: 0,
+        history: []
+      });
+    }
+
+    res.json({
+      totalProfit: stats.totalProfit,
+      history: stats.history
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: "Erro ao buscar stats" });
+  }
 
 });
 
@@ -104,7 +192,7 @@ app.get("/", (req, res) => {
 });
 
 // =====================================
-// ✅ PÁGINAS DE RETORNO STRIPE
+// ✅ STRIPE RETURN
 // =====================================
 app.get("/success", (req, res) => {
   res.send("Pagamento realizado com sucesso! Você já pode voltar para o app.");
@@ -148,8 +236,8 @@ async function startServer() {
     }, 120000);
 
     app.listen(PORT, () => {
-  console.log(`🔥 Servidor rodando na porta ${PORT}`);
-});
+      console.log(`🔥 Servidor rodando na porta ${PORT}`);
+    });
 
   } catch (err) {
     console.log("❌ ERRO:", err.message);
