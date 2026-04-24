@@ -9,6 +9,7 @@ const axios = require("axios");
 
 // 🔥 MODELS
 const User = require("./src/models/User");
+const UserStats = require("./models/UserStats");
 
 // 🔥 SERVICES
 const { scanOpportunities } = require("./src/ai/opportunityHunter");
