@@ -9,7 +9,7 @@ const axios = require("axios");
 
 // 🔥 MODELS
 const User = require("./src/models/User");
-const UserStats = require("./models/UserStats");
+const UserStats = require("./src/models/UserStats"); // ✅ CORRIGIDO
 
 // 🔥 SERVICES
 const { scanOpportunities } = require("./src/ai/opportunityHunter");
@@ -51,19 +51,17 @@ app.use("/user", userRoutes);
 let lastOpportunities = [];
 
 // =====================================
-// 🔓 FREE
+// 🔓 FREE (SEMPRE TEM DADO)
 // =====================================
 app.get("/ai/opportunities-public", async (req, res) => {
 
   if (!lastOpportunities || lastOpportunities.length === 0) {
-
     return res.json({
       data: [
         { name: "Bitcoin", coin: "BTC", price: 65000, signal: "BUY", confidence: 91 },
         { name: "Ethereum", coin: "ETH", price: 3200, signal: "BUY", confidence: 88 }
       ]
     });
-
   }
 
   res.json({
@@ -73,7 +71,7 @@ app.get("/ai/opportunities-public", async (req, res) => {
 });
 
 // =====================================
-// 🔥 NOVO: USER OPPORTUNITIES (PRO)
+// 🔥 USER OPPORTUNITIES (PRO)
 // =====================================
 app.get("/user/opportunities", async (req, res) => {
 
@@ -85,7 +83,6 @@ app.get("/user/opportunities", async (req, res) => {
       return res.status(400).json({ error: "Email obrigatório" });
     }
 
-    // usa cache (mais rápido)
     let data = lastOpportunities;
 
     if (!data || data.length === 0) {
@@ -104,8 +101,12 @@ app.get("/user/opportunities", async (req, res) => {
         userStats = new UserStats({ email });
       }
 
+      // ✅ ATUALIZAÇÕES PROFISSIONAIS
       userStats.totalProfit += profit;
+      userStats.totalSignals += 1;
+      userStats.lastUpdated = new Date();
 
+      // ✅ HISTÓRICO (NÍVEL APP REAL)
       userStats.history.unshift({
         coin: best.coin,
         profit: Number(profit.toFixed(2)),
@@ -113,6 +114,7 @@ app.get("/user/opportunities", async (req, res) => {
         time: new Date().toLocaleTimeString()
       });
 
+      // mantém só últimos 50
       userStats.history = userStats.history.slice(0, 50);
 
       await userStats.save();
@@ -128,7 +130,7 @@ app.get("/user/opportunities", async (req, res) => {
 });
 
 // =====================================
-// 🔥 NOVO: DASHBOARD USER
+// 📊 DASHBOARD USER
 // =====================================
 app.get("/user/stats", async (req, res) => {
 
@@ -145,12 +147,14 @@ app.get("/user/stats", async (req, res) => {
     if (!stats) {
       return res.json({
         totalProfit: 0,
+        totalSignals: 0,
         history: []
       });
     }
 
     res.json({
       totalProfit: stats.totalProfit,
+      totalSignals: stats.totalSignals,
       history: stats.history
     });
 
@@ -217,7 +221,7 @@ async function startServer() {
     // 🔥 PRIMEIRO LOAD
     lastOpportunities = await scanOpportunities();
 
-    // 🔁 LOOP
+    // 🔁 LOOP DE IA
     setInterval(async () => {
 
       const newData = await scanOpportunities();
