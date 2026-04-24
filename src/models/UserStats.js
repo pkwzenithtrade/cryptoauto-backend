@@ -1,19 +1,37 @@
 const mongoose = require("mongoose");
 
 const UserStatsSchema = new mongoose.Schema({
-  email: { type: String, required: true, unique: true },
+  email: {
+    type: String,
+    required: true,
+    unique: true
+  },
 
-  totalProfit: { type: Number, default: 0 },
+  totalSignals: {
+    type: Number,
+    default: 0
+  },
 
-  history: [
-    {
-      coin: String,
-      profit: Number,
-      confidence: Number,
-      time: String
-    }
-  ]
+  wins: {
+    type: Number,
+    default: 0
+  },
 
-}, { timestamps: true });
+  losses: {
+    type: Number,
+    default: 0
+  },
+
+  totalProfit: {
+    type: Number,
+    default: 0
+  },
+
+  lastUpdated: {
+    type: Date,
+    default: Date.now
+  }
+
+});
 
 module.exports = mongoose.model("UserStats", UserStatsSchema);
