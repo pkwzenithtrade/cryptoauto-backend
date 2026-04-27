@@ -9,7 +9,7 @@ const axios = require("axios");
 
 // 🔥 MODELS
 const User = require("./src/models/User");
-const UserStats = require("./src/models/UserStats"); // ✅ CORRIGIDO
+const UserStats = require("./src/models/UserStats");
 
 // 🔥 SERVICES
 const { scanOpportunities } = require("./src/ai/opportunityHunter");
@@ -101,12 +101,10 @@ app.get("/user/opportunities", async (req, res) => {
         userStats = new UserStats({ email });
       }
 
-      // ✅ ATUALIZAÇÕES PROFISSIONAIS
       userStats.totalProfit += profit;
       userStats.totalSignals += 1;
       userStats.lastUpdated = new Date();
 
-      // ✅ HISTÓRICO (NÍVEL APP REAL)
       userStats.history.unshift({
         coin: best.coin,
         profit: Number(profit.toFixed(2)),
@@ -114,7 +112,6 @@ app.get("/user/opportunities", async (req, res) => {
         time: new Date().toLocaleTimeString()
       });
 
-      // mantém só últimos 50
       userStats.history = userStats.history.slice(0, 50);
 
       await userStats.save();
@@ -160,6 +157,82 @@ app.get("/user/stats", async (req, res) => {
 
   } catch (err) {
     res.status(500).json({ error: "Erro ao buscar stats" });
+  }
+
+});
+
+// =====================================
+// 💰 SALDO (BASE REAL)
+// =====================================
+app.get("/user/balance", async (req, res) => {
+
+  try {
+    const { email } = req.query;
+
+    let stats = await UserStats.findOne({ email });
+
+    if (!stats) {
+      stats = new UserStats({ email, balance: 100 });
+      await stats.save();
+    }
+
+    res.json({
+      balance: stats.balance || 100
+    });
+
+  } catch {
+    res.status(500).json({ error: "Erro saldo" });
+  }
+
+});
+
+// =====================================
+// 🤖 EXECUTAR TRADE (BASE REAL)
+// =====================================
+app.post("/trade/execute", async (req, res) => {
+
+  try {
+
+    const { email, coin, action, amount } = req.body;
+
+    if (!email || !coin || !action || !amount) {
+      return res.status(400).json({ error: "Dados incompletos" });
+    }
+
+    let stats = await UserStats.findOne({ email });
+
+    if (!stats) {
+      stats = new UserStats({ email, balance: 100 });
+    }
+
+    if (stats.balance < amount) {
+      return res.status(400).json({ error: "Saldo insuficiente" });
+    }
+
+    // 🔥 SIMULAÇÃO REALISTA (pode trocar por Binance depois)
+    const profit = (Math.random() * 2 - 0.5) * amount;
+
+    stats.balance += profit;
+
+    stats.history.unshift({
+      coin,
+      profit: Number(profit.toFixed(2)),
+      confidence: 90,
+      time: new Date().toLocaleTimeString()
+    });
+
+    stats.history = stats.history.slice(0, 50);
+
+    await stats.save();
+
+    res.json({
+      success: true,
+      profit,
+      newBalance: stats.balance
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: "Erro trade" });
   }
 
 });
@@ -218,10 +291,8 @@ async function startServer() {
     await mongoose.connect(process.env.MONGO_URI);
     console.log("✅ MongoDB conectado");
 
-    // 🔥 PRIMEIRO LOAD
     lastOpportunities = await scanOpportunities();
 
-    // 🔁 LOOP DE IA
     setInterval(async () => {
 
       const newData = await scanOpportunities();
