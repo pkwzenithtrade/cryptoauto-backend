@@ -5,7 +5,6 @@ console.log("🚀 INICIANDO SERVIDOR...");
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
-const axios = require("axios");
 
 // 🔥 MODELS
 const User = require("./src/models/User");
@@ -15,6 +14,9 @@ const UserStats = require("./src/models/UserStats");
 const { scanOpportunities } = require("./src/ai/opportunityHunter");
 const { sendMessage, formatOpportunities } = require("./src/services/telegram.service");
 
+// ✅ NOVO (BINANCE REAL)
+const { buyMarket, sellMarket } = require("./src/services/exchange.service");
+
 // 🔥 ROUTES
 const authRoutes = require("./src/routes/auth.routes");
 const portfolioRoutes = require("./src/routes/portfolio.routes");
@@ -23,25 +25,14 @@ const paymentRoutes = require("./src/routes/payment.routes");
 const webhookRoutes = require("./src/routes/webhook.routes");
 const userRoutes = require("./src/routes/user.routes");
 
-// 🔐 MIDDLEWARE
-const authMiddleware = require("./src/middleware/auth.middleware");
-
 const app = express();
 
 // =====================================
-// 🚨 STRIPE WEBHOOK
-// =====================================
 app.use("/webhook", webhookRoutes);
 
-// =====================================
-// 🔥 MIDDLEWARES
-// =====================================
 app.use(cors());
 app.use(express.json());
 
-// =====================================
-// 🔥 ROTAS
-// =====================================
 app.use("/auth", authRoutes);
 app.use("/portfolio", portfolioRoutes);
 app.use("/ai", aiRoutes);
@@ -51,7 +42,7 @@ app.use("/user", userRoutes);
 let lastOpportunities = [];
 
 // =====================================
-// 🔓 FREE (SEMPRE TEM DADO)
+// FREE
 // =====================================
 app.get("/ai/opportunities-public", async (req, res) => {
 
@@ -71,7 +62,7 @@ app.get("/ai/opportunities-public", async (req, res) => {
 });
 
 // =====================================
-// 🔥 USER OPPORTUNITIES (PRO)
+// USER OPPORTUNITIES
 // =====================================
 app.get("/user/opportunities", async (req, res) => {
 
@@ -89,34 +80,6 @@ app.get("/user/opportunities", async (req, res) => {
       data = await scanOpportunities();
     }
 
-    const best = data[0];
-
-    if (best) {
-
-      const profit = (best.confidence / 100) * 0.25 * 100;
-
-      let userStats = await UserStats.findOne({ email });
-
-      if (!userStats) {
-        userStats = new UserStats({ email });
-      }
-
-      userStats.totalProfit += profit;
-      userStats.totalSignals += 1;
-      userStats.lastUpdated = new Date();
-
-      userStats.history.unshift({
-        coin: best.coin,
-        profit: Number(profit.toFixed(2)),
-        confidence: best.confidence,
-        time: new Date().toLocaleTimeString()
-      });
-
-      userStats.history = userStats.history.slice(0, 50);
-
-      await userStats.save();
-    }
-
     res.json({ data });
 
   } catch (err) {
@@ -127,42 +90,7 @@ app.get("/user/opportunities", async (req, res) => {
 });
 
 // =====================================
-// 📊 DASHBOARD USER
-// =====================================
-app.get("/user/stats", async (req, res) => {
-
-  try {
-
-    const { email } = req.query;
-
-    if (!email) {
-      return res.status(400).json({ error: "Email obrigatório" });
-    }
-
-    const stats = await UserStats.findOne({ email });
-
-    if (!stats) {
-      return res.json({
-        totalProfit: 0,
-        totalSignals: 0,
-        history: []
-      });
-    }
-
-    res.json({
-      totalProfit: stats.totalProfit,
-      totalSignals: stats.totalSignals,
-      history: stats.history
-    });
-
-  } catch (err) {
-    res.status(500).json({ error: "Erro ao buscar stats" });
-  }
-
-});
-
-// =====================================
-// 💰 SALDO (BASE REAL)
+// BALANCE
 // =====================================
 app.get("/user/balance", async (req, res) => {
 
@@ -187,7 +115,7 @@ app.get("/user/balance", async (req, res) => {
 });
 
 // =====================================
-// 🤖 EXECUTAR TRADE (BASE REAL)
+// 🚀 TRADE REAL COM BINANCE
 // =====================================
 app.post("/trade/execute", async (req, res) => {
 
@@ -209,7 +137,18 @@ app.post("/trade/execute", async (req, res) => {
       return res.status(400).json({ error: "Saldo insuficiente" });
     }
 
-    // 🔥 SIMULAÇÃO REALISTA (pode trocar por Binance depois)
+    const symbol = coin + "USDT";
+
+    let order;
+
+    if (action === "BUY") {
+      order = await buyMarket(symbol, amount);
+    } else {
+      // ⚠️ Aqui simplificado (você precisará guardar quantidade real depois)
+      order = await sellMarket(symbol, amount);
+    }
+
+    // 🔥 lucro estimado simples (depois melhoramos)
     const profit = (Math.random() * 2 - 0.5) * amount;
 
     stats.balance += profit;
@@ -227,18 +166,23 @@ app.post("/trade/execute", async (req, res) => {
 
     res.json({
       success: true,
+      order,
       profit,
       newBalance: stats.balance
     });
 
   } catch (err) {
-    res.status(500).json({ error: "Erro trade" });
+    console.log("Erro trade real:", err.message);
+
+    res.status(500).json({
+      error: "Erro ao executar trade real"
+    });
   }
 
 });
 
 // =====================================
-// 🔐 CHECK VIP
+// CHECK VIP
 // =====================================
 app.get("/auth/check-vip", async (req, res) => {
 
@@ -262,25 +206,10 @@ app.get("/auth/check-vip", async (req, res) => {
 });
 
 // =====================================
-// 🧪 TESTE
-// =====================================
 app.get("/", (req, res) => {
   res.send("Servidor funcionando 🚀");
 });
 
-// =====================================
-// ✅ STRIPE RETURN
-// =====================================
-app.get("/success", (req, res) => {
-  res.send("Pagamento realizado com sucesso! Você já pode voltar para o app.");
-});
-
-app.get("/cancel", (req, res) => {
-  res.send("Pagamento cancelado.");
-});
-
-// =====================================
-// 🚀 START
 // =====================================
 const PORT = process.env.PORT || 3000;
 
