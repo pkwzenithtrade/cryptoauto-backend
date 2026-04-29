@@ -1,51 +1,84 @@
-const Binance = require("binance-api-node").default;
+let client = null;
 
-const client = Binance({
-  apiKey: process.env.BINANCE_KEY,
-  apiSecret: process.env.BINANCE_SECRET,
-});
+try {
+  const Binance = require("binance-api-node").default;
 
-async function buyMarket(symbol, amountUSDT) {
-  try {
-
-    const price = await client.prices({ symbol });
-
-    const quantity = (amountUSDT / price[symbol]).toFixed(5);
-
-    const order = await client.order({
-      symbol,
-      side: "BUY",
-      type: "MARKET",
-      quantity
+  if (process.env.BINANCE_KEY && process.env.BINANCE_SECRET) {
+    client = Binance({
+      apiKey: process.env.BINANCE_KEY,
+      apiSecret: process.env.BINANCE_SECRET,
     });
 
-    return order;
+    console.log("✅ Binance conectado");
+  } else {
+    console.log("⚠️ Binance NÃO configurado (modo simulação)");
+  }
+
+} catch (err) {
+  console.log("⚠️ Binance lib não instalada (modo simulação)");
+}
+
+// =====================================
+// 💰 SALDO REAL
+// =====================================
+async function getBalance() {
+
+  if (!client) {
+    return 100; // fallback seguro
+  }
+
+  try {
+    const account = await client.accountInfo();
+
+    const usdt = account.balances.find(b => b.asset === "USDT");
+
+    return usdt ? parseFloat(usdt.free) : 0;
 
   } catch (err) {
-    console.log("Erro BUY:", err.message);
-    throw err;
+    console.log("Erro Binance balance:", err.message);
+    return 0;
   }
 }
 
-async function sellMarket(symbol, quantity) {
+// =====================================
+// 🤖 EXECUTAR TRADE REAL
+// =====================================
+async function executeTrade({ coin, action, amount }) {
+
+  if (!client) {
+    return {
+      success: false,
+      message: "Binance não configurado"
+    };
+  }
+
   try {
+
+    const symbol = coin + "USDT";
 
     const order = await client.order({
       symbol,
-      side: "SELL",
+      side: action,
       type: "MARKET",
-      quantity
+      quantity: amount,
     });
 
-    return order;
+    return {
+      success: true,
+      order
+    };
 
   } catch (err) {
-    console.log("Erro SELL:", err.message);
-    throw err;
+    console.log("Erro Binance trade:", err.message);
+
+    return {
+      success: false,
+      error: err.message
+    };
   }
 }
 
 module.exports = {
-  buyMarket,
-  sellMarket
+  getBalance,
+  executeTrade
 };
