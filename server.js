@@ -14,8 +14,11 @@ const UserStats = require("./src/models/UserStats");
 const { scanOpportunities } = require("./src/ai/opportunityHunter");
 const { sendMessage, formatOpportunities } = require("./src/services/telegram.service");
 
-// ✅ NOVO (BINANCE REAL)
-const { buyMarket, sellMarket } = require("./src/services/exchange.service");
+// ✅ BINANCE REAL
+const {
+  getBalance,
+  executeTrade
+} = require("./src/services/exchange.service");
 
 // 🔥 ROUTES
 const authRoutes = require("./src/routes/auth.routes");
@@ -49,8 +52,20 @@ app.get("/ai/opportunities-public", async (req, res) => {
   if (!lastOpportunities || lastOpportunities.length === 0) {
     return res.json({
       data: [
-        { name: "Bitcoin", coin: "BTC", price: 65000, signal: "BUY", confidence: 91 },
-        { name: "Ethereum", coin: "ETH", price: 3200, signal: "BUY", confidence: 88 }
+        {
+          name: "Bitcoin",
+          coin: "BTC",
+          price: 65000,
+          signal: "BUY",
+          confidence: 91
+        },
+        {
+          name: "Ethereum",
+          coin: "ETH",
+          price: 3200,
+          signal: "BUY",
+          confidence: 88
+        }
       ]
     });
   }
@@ -71,7 +86,9 @@ app.get("/user/opportunities", async (req, res) => {
     const { email } = req.query;
 
     if (!email) {
-      return res.status(400).json({ error: "Email obrigatório" });
+      return res.status(400).json({
+        error: "Email obrigatório"
+      });
     }
 
     let data = lastOpportunities;
@@ -83,80 +100,114 @@ app.get("/user/opportunities", async (req, res) => {
     res.json({ data });
 
   } catch (err) {
+
     console.log("Erro opportunities:", err.message);
-    res.status(500).json({ error: "Erro interno" });
+
+    res.status(500).json({
+      error: "Erro interno"
+    });
+
   }
 
 });
 
 // =====================================
-// BALANCE
+// 💰 SALDO REAL BINANCE
 // =====================================
 app.get("/user/balance", async (req, res) => {
 
   try {
-    const { email } = req.query;
 
-    let stats = await UserStats.findOne({ email });
-
-    if (!stats) {
-      stats = new UserStats({ email, balance: 100 });
-      await stats.save();
-    }
+    const balance = await getBalance();
 
     res.json({
-      balance: stats.balance || 100
+      balance
     });
 
-  } catch {
-    res.status(500).json({ error: "Erro saldo" });
+  } catch (err) {
+
+    console.log("Erro balance:", err.message);
+
+    res.status(500).json({
+      error: "Erro saldo"
+    });
+
   }
 
 });
 
 // =====================================
-// 🚀 TRADE REAL COM BINANCE
+// 🤖 TRADE REAL COM CONTROLE DE RISCO
 // =====================================
 app.post("/trade/execute", async (req, res) => {
 
   try {
 
-    const { email, coin, action, amount } = req.body;
+    const {
+      email,
+      coin,
+      action,
+      amount
+    } = req.body;
 
     if (!email || !coin || !action || !amount) {
-      return res.status(400).json({ error: "Dados incompletos" });
+
+      return res.status(400).json({
+        error: "Dados incompletos"
+      });
+
     }
+
+    // =====================================
+    // 🔒 CONTROLE DE RISCO PROFISSIONAL
+    // =====================================
+
+    const riskPercent = 0.02; // 2%
+
+    const balance = await getBalance();
+
+    const maxRisk = balance * riskPercent;
+
+    if (amount > maxRisk) {
+
+      return res.status(400).json({
+        error: `Risco máximo permitido: ${maxRisk.toFixed(2)} USDT`
+      });
+
+    }
+
+    // =====================================
+    // 🚀 EXECUTA ORDEM REAL
+    // =====================================
+
+    const result = await executeTrade({
+      coin,
+      action,
+      amount
+    });
+
+    if (!result.success) {
+
+      return res.status(400).json({
+        error: result.error || "Erro Binance"
+      });
+
+    }
+
+    // =====================================
+    // 💾 HISTÓRICO
+    // =====================================
 
     let stats = await UserStats.findOne({ email });
 
     if (!stats) {
-      stats = new UserStats({ email, balance: 100 });
+      stats = new UserStats({ email });
     }
-
-    if (stats.balance < amount) {
-      return res.status(400).json({ error: "Saldo insuficiente" });
-    }
-
-    const symbol = coin + "USDT";
-
-    let order;
-
-    if (action === "BUY") {
-      order = await buyMarket(symbol, amount);
-    } else {
-      // ⚠️ Aqui simplificado (você precisará guardar quantidade real depois)
-      order = await sellMarket(symbol, amount);
-    }
-
-    // 🔥 lucro estimado simples (depois melhoramos)
-    const profit = (Math.random() * 2 - 0.5) * amount;
-
-    stats.balance += profit;
 
     stats.history.unshift({
       coin,
-      profit: Number(profit.toFixed(2)),
-      confidence: 90,
+      profit: 0,
+      confidence: 95,
       time: new Date().toLocaleTimeString()
     });
 
@@ -164,19 +215,24 @@ app.post("/trade/execute", async (req, res) => {
 
     await stats.save();
 
+    // =====================================
+
     res.json({
       success: true,
-      order,
-      profit,
-      newBalance: stats.balance
+      order: result.order,
+      balance,
+      riskUsed: amount,
+      maxRisk
     });
 
   } catch (err) {
+
     console.log("Erro trade real:", err.message);
 
     res.status(500).json({
       error: "Erro ao executar trade real"
     });
+
   }
 
 });
@@ -188,10 +244,17 @@ app.get("/auth/check-vip", async (req, res) => {
 
   try {
 
-    const user = await User.findOne({ email: req.query.email });
+    const user = await User.findOne({
+      email: req.query.email
+    });
 
     if (!user) {
-      return res.json({ vip: false, plan: "free" });
+
+      return res.json({
+        vip: false,
+        plan: "free"
+      });
+
     }
 
     res.json({
@@ -200,7 +263,12 @@ app.get("/auth/check-vip", async (req, res) => {
     });
 
   } catch {
-    res.json({ vip: false, plan: "free" });
+
+    res.json({
+      vip: false,
+      plan: "free"
+    });
+
   }
 
 });
@@ -213,11 +281,13 @@ app.get("/", (req, res) => {
 // =====================================
 const PORT = process.env.PORT || 3000;
 
+// =====================================
 async function startServer() {
 
   try {
 
     await mongoose.connect(process.env.MONGO_URI);
+
     console.log("✅ MongoDB conectado");
 
     lastOpportunities = await scanOpportunities();
@@ -233,6 +303,7 @@ async function startServer() {
         console.log("🚀 NOVOS SINAIS");
 
         const msg = formatOpportunities(newData);
+
         await sendMessage(msg);
 
       }
@@ -240,11 +311,15 @@ async function startServer() {
     }, 120000);
 
     app.listen(PORT, () => {
+
       console.log(`🔥 Servidor rodando na porta ${PORT}`);
+
     });
 
   } catch (err) {
+
     console.log("❌ ERRO:", err.message);
+
   }
 
 }
