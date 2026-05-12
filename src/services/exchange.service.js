@@ -7,10 +7,15 @@ try {
   // =====================================
   // 🔥 BINANCE REAL / TESTNET
   // =====================================
-  if (process.env.BINANCE_API_KEY && process.env.BINANCE_API_SECRET) {
+  if (
+    process.env.BINANCE_API_KEY &&
+    process.env.BINANCE_API_SECRET
+  ) {
 
     client = Binance({
+
       apiKey: process.env.BINANCE_API_KEY,
+
       apiSecret: process.env.BINANCE_API_SECRET,
 
       futures: true,
@@ -19,48 +24,69 @@ try {
         process.env.BINANCE_TESTNET === "true"
           ? "https://testnet.binancefuture.com"
           : undefined
+
     });
 
     console.log(
+
       process.env.BINANCE_TESTNET === "true"
         ? "🧪 Binance TESTNET conectado"
         : "💰 Binance REAL conectado"
+
     );
 
   } else {
 
-    console.log("⚠️ Binance NÃO configurado (modo simulação)");
+    console.log(
+      "⚠️ Binance NÃO configurado (modo simulação)"
+    );
 
   }
 
 } catch (err) {
 
-  console.log("⚠️ Binance lib não instalada:", err.message);
+  console.log(
+    "⚠️ Binance lib não instalada:",
+    err.message
+  );
 
 }
 
 // =====================================
-// 💰 SALDO FUTURES
+// 💰 SALDO FUTURES REAL
 // =====================================
 async function getBalance() {
 
+  // 🔥 sem fallback fake
   if (!client) {
-    return 100;
+    return 0;
   }
 
   try {
 
     const balances = await client.futuresBalance();
 
+    console.log("📊 Binance balances:", balances);
+
     const usdt = balances.find(
       (b) => b.asset === "USDT"
     );
 
-    return usdt ? parseFloat(usdt.balance) : 0;
+    // 🔥 pega balance real
+    const balance = usdt
+      ? parseFloat(usdt.availableBalance || usdt.balance)
+      : 0;
+
+    console.log("💰 Saldo real:", balance);
+
+    return balance;
 
   } catch (err) {
 
-    console.log("Erro Binance balance:", err.message);
+    console.log(
+      "❌ Erro Binance balance:",
+      err.message
+    );
 
     return 0;
   }
@@ -85,7 +111,10 @@ async function getPrice(symbol) {
 
   } catch (err) {
 
-    console.log("Erro Binance price:", err.message);
+    console.log(
+      "❌ Erro Binance price:",
+      err.message
+    );
 
     return 0;
   }
@@ -114,8 +143,11 @@ async function executeTrade({
   if (!client) {
 
     return {
+
       success: false,
+
       message: "Binance não configurado"
+
     };
 
   }
@@ -131,8 +163,11 @@ async function executeTrade({
     if (!price) {
 
       return {
+
         success: false,
+
         error: "Preço inválido"
+
       };
 
     }
@@ -157,7 +192,10 @@ async function executeTrade({
 
     });
 
-    console.log("✅ ORDEM EXECUTADA:", order.orderId);
+    console.log(
+      "✅ ORDEM EXECUTADA:",
+      order.orderId
+    );
 
     return {
 
@@ -184,7 +222,10 @@ async function executeTrade({
 
   } catch (err) {
 
-    console.log("❌ Erro Binance trade:", err.message);
+    console.log(
+      "❌ Erro Binance trade:",
+      err.message
+    );
 
     return {
 
