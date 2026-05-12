@@ -115,7 +115,6 @@ app.get("/user/opportunities", async (req, res) => {
 // 💰 SALDO REAL BINANCE
 // =====================================
 
-const { getBalance } = require("./src/services/exchange.service");
 
 app.get("/user/balance", async (req, res) => {
 
