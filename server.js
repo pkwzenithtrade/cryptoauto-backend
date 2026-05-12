@@ -114,6 +114,9 @@ app.get("/user/opportunities", async (req, res) => {
 // =====================================
 // 💰 SALDO REAL BINANCE
 // =====================================
+
+const { getBalance } = require("./src/services/exchange.service");
+
 app.get("/user/balance", async (req, res) => {
 
   try {
@@ -129,9 +132,8 @@ app.get("/user/balance", async (req, res) => {
     console.log("Erro balance:", err.message);
 
     res.status(500).json({
-      error: "Erro saldo"
+      error: "Erro ao buscar saldo Binance"
     });
-
   }
 
 });
