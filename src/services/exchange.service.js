@@ -53,31 +53,35 @@ try {
 }
 
 // =====================================
-// 💰 SALDO FUTURES REAL
+// 💰 SALDO REAL BINANCE
 // =====================================
 async function getBalance() {
 
-  // 🔥 sem fallback fake
   if (!client) {
     return 0;
   }
 
   try {
 
-    const balances = await client.futuresBalance();
+    // 🔥 CONTA FUTURES
+    const account = await client.futuresAccountInfo();
 
-    console.log("📊 Binance balances:", balances);
+    console.log("📊 Futures account carregada");
 
-    const usdt = balances.find(
-      (b) => b.asset === "USDT"
+    const asset = account.assets.find(
+      (a) => a.asset === "USDT"
     );
 
-    // 🔥 pega balance real
-    const balance = usdt
-      ? parseFloat(usdt.availableBalance || usdt.balance)
-      : 0;
+    if (!asset) {
+      return 0;
+    }
 
-    console.log("💰 Saldo real:", balance);
+    // 🔥 saldo disponível real
+    const balance = parseFloat(
+      asset.availableBalance || asset.walletBalance || 0
+    );
+
+    console.log("💰 Saldo Binance:", balance);
 
     return balance;
 
@@ -103,9 +107,7 @@ async function getPrice(symbol) {
 
   try {
 
-    const prices = await client.futuresPrices({
-      symbol
-    });
+    const prices = await client.futuresPrices();
 
     return parseFloat(prices[symbol]);
 
@@ -125,7 +127,10 @@ async function getPrice(symbol) {
 // =====================================
 function adjustQuantity(quantity) {
 
-  return Number(quantity).toFixed(3);
+  // remove zeros inválidos
+  return parseFloat(
+    Number(quantity).toFixed(3)
+  );
 
 }
 
@@ -172,10 +177,26 @@ async function executeTrade({
 
     }
 
-    // 💰 QUANTIDADE BASEADA EM USDT
+    // 💰 QUANTIDADE EM MOEDA
     const rawQuantity = amount / price;
 
     const quantity = adjustQuantity(rawQuantity);
+
+    if (quantity <= 0) {
+
+      return {
+
+        success: false,
+
+        error: "Quantidade inválida"
+
+      };
+
+    }
+
+    console.log(
+      `🚀 EXECUTANDO ${action} ${symbol} | Qty: ${quantity}`
+    );
 
     // =====================================
     // 🚨 ORDEM REAL FUTURES
@@ -184,7 +205,7 @@ async function executeTrade({
 
       symbol,
 
-      side: action, // BUY / SELL
+      side: action,
 
       type: "MARKET",
 
