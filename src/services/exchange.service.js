@@ -5,7 +5,7 @@ try {
   const Binance = require("binance-api-node").default;
 
   // =====================================
-  // 🔥 BINANCE REAL / TESTNET
+  // 🔥 BINANCE SPOT REAL
   // =====================================
   if (
     process.env.BINANCE_API_KEY &&
@@ -16,29 +16,16 @@ try {
 
       apiKey: process.env.BINANCE_API_KEY,
 
-      apiSecret: process.env.BINANCE_API_SECRET,
-
-      futures: true,
-
-      httpFutures:
-        process.env.BINANCE_TESTNET === "true"
-          ? "https://testnet.binancefuture.com"
-          : undefined
+      apiSecret: process.env.BINANCE_API_SECRET
 
     });
 
-    console.log(
-
-      process.env.BINANCE_TESTNET === "true"
-        ? "🧪 Binance TESTNET conectado"
-        : "💰 Binance REAL conectado"
-
-    );
+    console.log("💰 Binance SPOT conectado");
 
   } else {
 
     console.log(
-      "⚠️ Binance NÃO configurado (modo simulação)"
+      "⚠️ Binance NÃO configurado"
     );
 
   }
@@ -53,7 +40,7 @@ try {
 }
 
 // =====================================
-// 💰 SALDO REAL BINANCE
+// 💰 SALDO SPOT REAL
 // =====================================
 async function getBalance() {
 
@@ -63,12 +50,12 @@ async function getBalance() {
 
   try {
 
-    // 🔥 CONTA FUTURES
-    const account = await client.futuresAccountInfo();
+    // 🔥 CONTA SPOT
+    const account = await client.accountInfo();
 
-    console.log("📊 Futures account carregada");
+    console.log("📊 Spot account carregada");
 
-    const asset = account.assets.find(
+    const asset = account.balances.find(
       (a) => a.asset === "USDT"
     );
 
@@ -76,9 +63,9 @@ async function getBalance() {
       return 0;
     }
 
-    // 🔥 saldo disponível real
+    // 🔥 saldo disponível
     const balance = parseFloat(
-      asset.availableBalance || asset.walletBalance || 0
+      asset.free || 0
     );
 
     console.log("💰 Saldo Binance:", balance);
@@ -97,7 +84,7 @@ async function getBalance() {
 }
 
 // =====================================
-// 🔎 PREÇO REAL
+// 🔎 PREÇO REAL SPOT
 // =====================================
 async function getPrice(symbol) {
 
@@ -107,7 +94,7 @@ async function getPrice(symbol) {
 
   try {
 
-    const prices = await client.futuresPrices();
+    const prices = await client.prices();
 
     return parseFloat(prices[symbol]);
 
@@ -127,15 +114,14 @@ async function getPrice(symbol) {
 // =====================================
 function adjustQuantity(quantity) {
 
-  // remove zeros inválidos
   return parseFloat(
-    Number(quantity).toFixed(3)
+    Number(quantity).toFixed(5)
   );
 
 }
 
 // =====================================
-// 🤖 EXECUTAR TRADE REAL
+// 🤖 EXECUTAR TRADE REAL SPOT
 // =====================================
 async function executeTrade({
 
@@ -177,7 +163,7 @@ async function executeTrade({
 
     }
 
-    // 💰 QUANTIDADE EM MOEDA
+    // 💰 QUANTIDADE
     const rawQuantity = amount / price;
 
     const quantity = adjustQuantity(rawQuantity);
@@ -199,9 +185,9 @@ async function executeTrade({
     );
 
     // =====================================
-    // 🚨 ORDEM REAL FUTURES
+    // 🚨 ORDEM REAL SPOT
     // =====================================
-    const order = await client.futuresOrder({
+    const order = await client.order({
 
       symbol,
 
@@ -222,10 +208,7 @@ async function executeTrade({
 
       success: true,
 
-      mode:
-        process.env.BINANCE_TESTNET === "true"
-          ? "TESTNET"
-          : "REAL",
+      mode: "SPOT",
 
       symbol,
 
