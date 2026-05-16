@@ -50,25 +50,29 @@ async function getBalance() {
 
   try {
 
-    // 🔥 CONTA SPOT
     const account = await client.accountInfo();
 
-    console.log("📊 Spot account carregada");
+    console.log(
+      "📊 BALANCES:",
+      JSON.stringify(account.balances)
+    );
 
     const asset = account.balances.find(
       (a) => a.asset === "USDT"
     );
 
     if (!asset) {
+
+      console.log("❌ USDT não encontrado");
+
       return 0;
     }
 
-    // 🔥 saldo disponível
     const balance = parseFloat(
       asset.free || 0
     );
 
-    console.log("💰 Saldo Binance:", balance);
+    console.log("💰 USDT:", balance);
 
     return balance;
 
@@ -82,6 +86,8 @@ async function getBalance() {
     return 0;
   }
 }
+
+
 
 // =====================================
 // 🔎 PREÇO REAL SPOT
