@@ -40,7 +40,7 @@ try {
 }
 
 // =====================================
-// 💰 SALDO SPOT REAL
+// 💰 SALDO REAL BINANCE SPOT
 // =====================================
 async function getBalance() {
 
@@ -53,26 +53,26 @@ async function getBalance() {
     const account = await client.accountInfo();
 
     console.log(
-      "📊 BALANCES:",
-      JSON.stringify(account.balances)
+      "📊 Assets:",
+      account.balances
+        .filter(b => parseFloat(b.free) > 0)
     );
 
-    const asset = account.balances.find(
-      (a) => a.asset === "USDT"
+    // 🔥 procura USDT
+    const usdt = account.balances.find(
+      (b) => b.asset === "USDT"
     );
 
-    if (!asset) {
+    if (!usdt) {
 
       console.log("❌ USDT não encontrado");
 
       return 0;
     }
 
-    const balance = parseFloat(
-      asset.free || 0
-    );
+    const balance = parseFloat(usdt.free);
 
-    console.log("💰 USDT:", balance);
+    console.log("💰 SALDO USDT:", balance);
 
     return balance;
 
@@ -86,6 +86,7 @@ async function getBalance() {
     return 0;
   }
 }
+
 
 
 
