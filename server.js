@@ -114,28 +114,37 @@ app.get("/user/opportunities", async (req, res) => {
 // =====================================
 // 💰 SALDO REAL BINANCE
 // =====================================
-
-
 app.get("/user/balance", async (req, res) => {
 
   try {
 
+    console.log("📡 Buscando saldo Binance...");
+
     const balance = await getBalance();
 
+    console.log("💰 Saldo recebido:", balance);
+
     res.json({
+      success: true,
       balance
     });
 
   } catch (err) {
 
-    console.log("Erro balance:", err.message);
+    console.log(
+      "❌ Erro balance:",
+      err.message
+    );
 
     res.status(500).json({
-      error: "Erro ao buscar saldo Binance"
+      success: false,
+      error: err.message
     });
+
   }
 
 });
+
 
 // =====================================
 // 🤖 TRADE REAL COM CONTROLE DE RISCO
