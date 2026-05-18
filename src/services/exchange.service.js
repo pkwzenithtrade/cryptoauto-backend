@@ -39,8 +39,9 @@ try {
 
 }
 
+
 // =====================================
-// 💰 SALDO REAL BINANCE SPOT
+// 💰 TESTE COMPLETO BINANCE
 // =====================================
 async function getBalance() {
 
@@ -50,44 +51,68 @@ async function getBalance() {
 
   try {
 
+    console.log("📡 Buscando saldo Binance...");
+
+    // =====================================
+    // INFO DA CONTA
+    // =====================================
     const account = await client.accountInfo();
 
     console.log(
-      "📊 Assets:",
-      account.balances
-        .filter(b => parseFloat(b.free) > 0)
+      "✅ ACCOUNT INFO RECEBIDA"
     );
 
-    // 🔥 procura USDT
+    console.log(
+      "📊 BALANCES COMPLETO:",
+      JSON.stringify(account.balances)
+    );
+
+    // =====================================
+    // MOSTRA SOMENTE SALDOS > 0
+    // =====================================
+    const positiveBalances = account.balances.filter(
+      (b) =>
+        parseFloat(b.free) > 0 ||
+        parseFloat(b.locked) > 0
+    );
+
+    console.log(
+      "💰 SALDOS ENCONTRADOS:",
+      positiveBalances
+    );
+
+    // =====================================
+    // PROCURA USDT
+    // =====================================
     const usdt = account.balances.find(
       (b) => b.asset === "USDT"
     );
 
     if (!usdt) {
 
-      console.log("❌ USDT não encontrado");
+      console.log("❌ USDT NÃO ENCONTRADO");
 
       return 0;
+
     }
 
     const balance = parseFloat(usdt.free);
 
-    console.log("💰 SALDO USDT:", balance);
+    console.log("💰 USDT FREE:", balance);
 
     return balance;
 
   } catch (err) {
 
     console.log(
-      "❌ Erro Binance balance:",
-      err.message
+      "❌ ERRO COMPLETO BINANCE:"
     );
+
+    console.log(err);
 
     return 0;
   }
 }
-
-
 
 
 // =====================================
