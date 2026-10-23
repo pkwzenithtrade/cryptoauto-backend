@@ -1,26 +1,25 @@
+
 require("dotenv").config();
 
-console.log("🚀 INICIANDO SERVIDOR...");
+console.log("🚀 INICIANDO SERVIDOR CRYPTOAUTO AI...");
 
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
 
-// 🔥 MODELS
 const User = require("./src/models/User");
 const UserStats = require("./src/models/UserStats");
 
-// 🔥 SERVICES
 const { scanOpportunities } = require("./src/ai/opportunityHunter");
-const { sendMessage, formatOpportunities } = require("./src/services/telegram.service");
-
-// ✅ BINANCE REAL
 const {
-  getBalance,
-  executeTrade
+  sendMessage,
+  formatOpportunities
+} = require("./src/services/telegram.service");
+
+const {
+  getBalance
 } = require("./src/services/exchange.service");
 
-// 🔥 ROUTES
 const authRoutes = require("./src/routes/auth.routes");
 const portfolioRoutes = require("./src/routes/portfolio.routes");
 const aiRoutes = require("./src/routes/ai.routes");
@@ -30,11 +29,10 @@ const userRoutes = require("./src/routes/user.routes");
 
 const app = express();
 
-// =====================================
 app.use("/webhook", webhookRoutes);
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "100kb" }));
 
 app.use("/auth", authRoutes);
 app.use("/portfolio", portfolioRoutes);
@@ -43,297 +41,272 @@ app.use("/payment", paymentRoutes);
 app.use("/user", userRoutes);
 
 let lastOpportunities = [];
+let scannerReady = false;
+
+// Negociação real permanece bloqueada nesta etapa.
+const REAL_TRADING_ENABLED = false;
 
 // =====================================
-// FREE
+// NORMALIZAR O RESULTADO DOS SINAIS
 // =====================================
-app.get("/ai/opportunities-public", async (req, res) => {
-
-  if (!lastOpportunities || lastOpportunities.length === 0) {
-    return res.json({
-      data: [
-        {
-          name: "Bitcoin",
-          coin: "BTC",
-          price: 65000,
-          signal: "BUY",
-          confidence: 91
-        },
-        {
-          name: "Ethereum",
-          coin: "ETH",
-          price: 3200,
-          signal: "BUY",
-          confidence: 88
-        }
-      ]
-    });
+function normalizeOpportunities(data) {
+  if (!Array.isArray(data)) {
+    return [];
   }
 
-  res.json({
-    data: lastOpportunities.slice(0, 2)
+  // Não inventar oportunidades quando o scanner não encontra sinais.
+  return data.filter((item) => {
+    return (
+      item &&
+      typeof item === "object" &&
+      typeof item.coin === "string" &&
+      item.coin.trim().length > 0 &&
+      Number.isFinite(Number(item.price)) &&
+      Number(item.price) > 0 &&
+      ["BUY", "SELL"].includes(
+        String(item.signal || "").toUpperCase()
+      )
+    );
   });
+}
 
+// =====================================
+// STATUS DO SERVIDOR
+// =====================================
+app.get("/", (req, res) => {
+  res.json({
+    service: "CryptoAuto AI",
+    status: "online",
+    tradingEnabled: REAL_TRADING_ENABLED,
+    scannerReady,
+    timestamp: new Date().toISOString()
+  });
 });
 
 // =====================================
-// USER OPPORTUNITIES
+// OPORTUNIDADES PÚBLICAS
+// Sem sinais inventados ou preços fixos.
+// =====================================
+app.get("/ai/opportunities-public", (req, res) => {
+  res.json({
+    data: lastOpportunities.slice(0, 2),
+    scannerReady,
+    message: lastOpportunities.length
+      ? undefined
+      : "Nenhuma oportunidade validada disponível."
+  });
+});
+
+// =====================================
+// OPORTUNIDADES DO USUÁRIO
 // =====================================
 app.get("/user/opportunities", async (req, res) => {
-
   try {
-
-    const { email } = req.query;
-
-    if (!email) {
+    if (!req.query.email) {
       return res.status(400).json({
+        success: false,
         error: "Email obrigatório"
       });
     }
 
-    let data = lastOpportunities;
-
-    if (!data || data.length === 0) {
-      data = await scanOpportunities();
-    }
-
-    res.json({ data });
-
-  } catch (err) {
-
-    console.log("Erro opportunities:", err.message);
-
-    res.status(500).json({
-      error: "Erro interno"
+    res.json({
+      data: lastOpportunities,
+      scannerReady,
+      message: lastOpportunities.length
+        ? undefined
+        : "Nenhuma oportunidade validada disponível."
     });
+  } catch (err) {
+    console.error("Erro opportunities:", err.message);
 
+    return res.status(500).json({
+      success: false,
+      error: "Não foi possível consultar as oportunidades."
+    });
   }
-
 });
 
 // =====================================
-// 💰 SALDO REAL BINANCE
+// SALDO DA CORRETORA
 // =====================================
 app.get("/user/balance", async (req, res) => {
-
   try {
-
-    console.log("📡 Buscando saldo Binance...");
+    console.log("📡 Consultando saldo da corretora...");
 
     const balance = await getBalance();
 
-    console.log("💰 Saldo recebido:", balance);
+    // Não apresentar valores inválidos como saldo confiável.
+    if (
+      typeof balance !== "number" ||
+      !Number.isFinite(balance) ||
+      balance < 0
+    ) {
+      return res.status(502).json({
+        success: false,
+        error: "A corretora não retornou um saldo válido."
+      });
+    }
 
-    res.json({
+    return res.json({
       success: true,
-      balance
+      balance,
+      currency: "USDT",
+      source: "exchange_service"
     });
-
   } catch (err) {
+    console.error("Erro ao consultar saldo:", err.message);
 
-    console.log(
-      "❌ Erro balance:",
-      err.message
-    );
-
-    res.status(500).json({
+    return res.status(502).json({
       success: false,
-      error: err.message
+      error: "Não foi possível confirmar o saldo na corretora."
     });
-
   }
-
 });
 
-
 // =====================================
-// 🤖 TRADE REAL COM CONTROLE DE RISCO
+// EXECUÇÃO DE ORDENS
+// BLOQUEADA ATÉ A VALIDAÇÃO COMPLETA
 // =====================================
 app.post("/trade/execute", async (req, res) => {
-
-  try {
-
-    const {
-      email,
-      coin,
-      action,
-      amount
-    } = req.body;
-
-    if (!email || !coin || !action || !amount) {
-
-      return res.status(400).json({
-        error: "Dados incompletos"
-      });
-
-    }
-
-    // =====================================
-    // 🔒 CONTROLE DE RISCO PROFISSIONAL
-    // =====================================
-
-    const riskPercent = 0.02; // 2%
-
-    const balance = await getBalance();
-
-    const maxRisk = balance * riskPercent;
-
-    if (amount > maxRisk) {
-
-      return res.status(400).json({
-        error: `Risco máximo permitido: ${maxRisk.toFixed(2)} USDT`
-      });
-
-    }
-
-    // =====================================
-    // 🚀 EXECUTA ORDEM REAL
-    // =====================================
-
-    const result = await executeTrade({
-      coin,
-      action,
-      amount
+  if (!REAL_TRADING_ENABLED) {
+    return res.status(503).json({
+      success: false,
+      tradingEnabled: false,
+      error:
+        "Negociação real temporariamente bloqueada. " +
+        "Aguarde a validação da corretora, autenticação, " +
+        "saldo e controles de risco."
     });
-
-    if (!result.success) {
-
-      return res.status(400).json({
-        error: result.error || "Erro Binance"
-      });
-
-    }
-
-    // =====================================
-    // 💾 HISTÓRICO
-    // =====================================
-
-    let stats = await UserStats.findOne({ email });
-
-    if (!stats) {
-      stats = new UserStats({ email });
-    }
-
-    stats.history.unshift({
-      coin,
-      profit: 0,
-      confidence: 95,
-      time: new Date().toLocaleTimeString()
-    });
-
-    stats.history = stats.history.slice(0, 50);
-
-    await stats.save();
-
-    // =====================================
-
-    res.json({
-      success: true,
-      order: result.order,
-      balance,
-      riskUsed: amount,
-      maxRisk
-    });
-
-  } catch (err) {
-
-    console.log("Erro trade real:", err.message);
-
-    res.status(500).json({
-      error: "Erro ao executar trade real"
-    });
-
   }
 
+  // Não habilitar esta rota apenas alterando a constante.
+  // Antes disso, implementar autenticação obrigatória,
+  // validação do mercado, saldo disponível, regras do par,
+  // idempotência e confirmação da ordem na corretora.
+
+  return res.status(503).json({
+    success: false,
+    error: "Execução ainda não implementada para produção."
+  });
 });
 
 // =====================================
-// CHECK VIP
+// VERIFICAR PLANO VIP
+// Mantido para compatibilidade.
 // =====================================
 app.get("/auth/check-vip", async (req, res) => {
-
   try {
+    const email = req.query.email;
 
-    const user = await User.findOne({
-      email: req.query.email
-    });
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        error: "Email obrigatório"
+      });
+    }
+
+    const user = await User.findOne({ email });
 
     if (!user) {
-
       return res.json({
         vip: false,
         plan: "free"
       });
-
     }
 
-    res.json({
-      vip: user.isVIP || false,
+    return res.json({
+      vip: Boolean(user.isVIP),
       plan: user.plan || "free"
     });
+  } catch (err) {
+    console.error("Erro ao verificar VIP:", err.message);
 
-  } catch {
-
-    res.json({
-      vip: false,
-      plan: "free"
+    return res.status(500).json({
+      success: false,
+      error: "Não foi possível verificar o plano."
     });
-
   }
-
 });
 
 // =====================================
-app.get("/", (req, res) => {
-  res.send("Servidor funcionando 🚀");
-});
+// ATUALIZAR SINAIS
+// =====================================
+async function refreshOpportunities() {
+  try {
+    const result = await scanOpportunities();
+    const newData = normalizeOpportunities(result);
 
+    const changed =
+      JSON.stringify(newData) !==
+      JSON.stringify(lastOpportunities);
+
+    lastOpportunities = newData;
+    scannerReady = true;
+
+    if (changed && newData.length > 0) {
+      console.log("📊 Oportunidades atualizadas:", newData.length);
+
+      try {
+        const message = formatOpportunities(newData);
+        await sendMessage(message);
+      } catch (telegramError) {
+        console.error(
+          "Aviso Telegram:",
+          telegramError.message
+        );
+      }
+    }
+
+    console.log(
+      `🔎 Scanner concluído: ${newData.length} oportunidade(s).`
+    );
+  } catch (err) {
+    scannerReady = false;
+
+    // Não fabricar sinais quando a consulta falhar.
+    lastOpportunities = [];
+
+    console.error(
+      "Erro ao atualizar oportunidades:",
+      err.message
+    );
+  }
+}
+
+// =====================================
+// INICIALIZAÇÃO
 // =====================================
 const PORT = process.env.PORT || 3000;
 
-// =====================================
 async function startServer() {
-
   try {
+    if (!process.env.MONGO_URI) {
+      throw new Error("MONGO_URI não configurada.");
+    }
 
     await mongoose.connect(process.env.MONGO_URI);
-
     console.log("✅ MongoDB conectado");
 
-    lastOpportunities = await scanOpportunities();
+    await refreshOpportunities();
 
-    setInterval(async () => {
-
-      const newData = await scanOpportunities();
-
-      if (JSON.stringify(newData) !== JSON.stringify(lastOpportunities)) {
-
-        lastOpportunities = newData;
-
-        console.log("🚀 NOVOS SINAIS");
-
-        const msg = formatOpportunities(newData);
-
-        await sendMessage(msg);
-
-      }
-
+    setInterval(() => {
+      refreshOpportunities().catch((err) => {
+        console.error("Erro no ciclo do scanner:", err.message);
+      });
     }, 120000);
 
     app.listen(PORT, () => {
-
       console.log(`🔥 Servidor rodando na porta ${PORT}`);
-
+      console.log("🛡️ Negociação real: BLOQUEADA");
     });
-
   } catch (err) {
-
-    console.log("❌ ERRO:", err.message);
-
+    console.error("❌ Falha ao iniciar servidor:", err.message);
+    process.exitCode = 1;
   }
-
 }
 
-startServer();
+if (require.main === module) {
+  startServer();
+}
 
 module.exports = app;
