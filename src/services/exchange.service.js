@@ -1,317 +1,173 @@
-let client = null;
 
-try {
+const Binance = require("binance-api-node").default;
 
-  const { RestClientV5 } = require("bybit-api");
+const apiKey = process.env.BINANCE_API_KEY;
+const apiSecret = process.env.BINANCE_API_SECRET;
 
-  // =====================================
-  // 🔥 BYBIT REAL
-  // =====================================
+const testnet = process.env.BINANCE_TESTNET === "true";
+
+const client = Binance({
+  ...(apiKey ? { apiKey } : {}),
+  ...(apiSecret ? { apiSecret } : {}),
+  ...(testnet
+    ? { httpBase: "https://testnet.binance.vision/api" }
+    : {})
+});
+
+console.log(
+  `📡 Binance Spot inicializada | Modo: ${
+    testnet ? "TESTNET" : "PRODUÇÃO - ORDENS BLOQUEADAS"
+  }`
+);
+
+// =====================================
+// VALIDAR SÍMBOLO
+// =====================================
+function validateSymbol(symbol) {
   if (
-    process.env.BYBIT_API_KEY &&
-    process.env.BYBIT_API_SECRET
+    typeof symbol !== "string" ||
+    !/^[A-Z0-9]{5,20}$/.test(symbol)
   ) {
-
-    client = new RestClientV5({
-
-      key: process.env.BYBIT_API_KEY,
-
-      secret: process.env.BYBIT_API_SECRET,
-
-      testnet: false
-
-    });
-
-    console.log("💰 BYBIT conectada");
-
-  } else {
-
-    console.log(
-      "⚠️ BYBIT NÃO configurada"
-    );
-
+    throw new Error("Símbolo de mercado inválido.");
   }
 
-} catch (err) {
-
-  console.log(
-    "⚠️ Bybit lib não instalada:",
-    err.message
-  );
-
+  return symbol;
 }
 
+// =====================================
+// TESTAR CONECTIVIDADE
+// =====================================
+async function testConnection() {
+  try {
+    await client.ping();
+
+    return {
+      success: true,
+      exchange: "Binance",
+      mode: testnet ? "TESTNET" : "PRODUCTION",
+      message: "API pública acessível."
+    };
+  } catch (err) {
+    console.error(
+      "❌ Falha de conexão Binance:",
+      err.message
+    );
+
+    throw new Error(
+      `Não foi possível acessar a API da Binance: ${err.message}`
+    );
+  }
+}
 
 // =====================================
-// 💰 TESTE COMPLETO BYBIT
+// CONSULTAR SALDO USDT
 // =====================================
 async function getBalance() {
-
-  if (!client) {
-    return 0;
+  if (!apiKey || !apiSecret) {
+    throw new Error(
+      "Credenciais Binance ausentes. Configure BINANCE_API_KEY e BINANCE_API_SECRET."
+    );
   }
 
   try {
+    console.log("📡 Consultando saldo Binance...");
 
-    console.log("📡 Buscando saldo Bybit...");
+    const account = await client.accountInfo();
 
-    // =====================================
-    // INFO DA CONTA
-    // =====================================
-    const response =
-      await client.getWalletBalance({
+    if (
+      !account ||
+      !Array.isArray(account.balances)
+    ) {
+      throw new Error(
+        "Resposta de saldo da Binance inválida."
+      );
+    }
 
-        accountType: "UNIFIED"
-
-      });
-
-    console.log(
-      "✅ WALLET RECEBIDA"
-    );
-
-    const wallet =
-      response.result.list[0];
-
-    const coins = wallet.coin;
-
-    console.log(
-      "📊 COINS:",
-      JSON.stringify(coins)
-    );
-
-    // =====================================
-    // PROCURA USDT
-    // =====================================
-    const usdt = coins.find(
-      (c) => c.coin === "USDT"
+    const usdt = account.balances.find(
+      (item) => item.asset === "USDT"
     );
 
     if (!usdt) {
-
-      console.log(
-        "❌ USDT NÃO ENCONTRADO"
+      throw new Error(
+        "Ativo USDT não encontrado na resposta da conta."
       );
-
-      return 0;
-
     }
 
-    const balance = parseFloat(
-      usdt.walletBalance || 0
-    );
+    const free = Number(usdt.free);
 
-    console.log(
-      "💰 USDT BALANCE:",
-      balance
-    );
+    if (!Number.isFinite(free) || free < 0) {
+      throw new Error(
+        "A Binance retornou um saldo USDT inválido."
+      );
+    }
 
-    return balance;
+    console.log("✅ Consulta de saldo concluída.");
 
+    // Retorna o saldo livre, sem registrar chaves
+    // ou imprimir os dados completos da conta.
+    return free;
   } catch (err) {
-
-    console.log(
-      "❌ ERRO COMPLETO BYBIT:"
+    console.error(
+      "❌ Falha ao consultar saldo Binance:",
+      err.message
     );
 
-    console.log(err);
-
-    return 0;
-
+    throw new Error(
+      `Falha na consulta de saldo Binance: ${err.message}`
+    );
   }
-
 }
 
-
 // =====================================
-// 🔎 PREÇO REAL SPOT
+// CONSULTAR PREÇO SPOT
 // =====================================
 async function getPrice(symbol) {
-
-  if (!client) {
-    return 0;
-  }
+  validateSymbol(symbol);
 
   try {
+    const prices = await client.prices({
+      symbol
+    });
 
-    const response =
-      await client.getTickers({
+    const price = Number(prices[symbol]);
 
-        category: "spot",
+    if (!Number.isFinite(price) || price <= 0) {
+      throw new Error(
+        `Preço indisponível para ${symbol}.`
+      );
+    }
 
-        symbol
-
-      });
-
-    const ticker =
-      response.result.list[0];
-
-    return parseFloat(
-      ticker.lastPrice
-    );
-
+    return price;
   } catch (err) {
-
-    console.log(
-      "❌ Erro Bybit price:",
+    console.error(
+      `❌ Falha ao consultar ${symbol}:`,
       err.message
     );
 
-    return 0;
-
+    throw new Error(
+      `Falha ao consultar preço de ${symbol}: ${err.message}`
+    );
   }
-
 }
 
-
 // =====================================
-// 📏 AJUSTAR QUANTIDADE
+// ORDENS REAIS DESABILITADAS
 // =====================================
-function adjustQuantity(quantity) {
-
-  return parseFloat(
-    Number(quantity).toFixed(5)
-  );
-
-}
-
-
-// =====================================
-// 🤖 EXECUTAR TRADE REAL SPOT
-// =====================================
-async function executeTrade({
-
-  coin,
-  action,
-  amount
-
-}) {
-
-  if (!client) {
-
-    return {
-
-      success: false,
-
-      message: "Bybit não configurada"
-
-    };
-
-  }
-
-  try {
-
-    // 🔗 PAR
-    const symbol = `${coin}USDT`;
-
-    // 🔎 PREÇO
-    const price =
-      await getPrice(symbol);
-
-    if (!price) {
-
-      return {
-
-        success: false,
-
-        error: "Preço inválido"
-
-      };
-
-    }
-
-    // 💰 QUANTIDADE
-    const rawQuantity =
-      amount / price;
-
-    const quantity =
-      adjustQuantity(rawQuantity);
-
-    if (quantity <= 0) {
-
-      return {
-
-        success: false,
-
-        error: "Quantidade inválida"
-
-      };
-
-    }
-
-    console.log(
-      `🚀 EXECUTANDO ${action} ${symbol} | Qty: ${quantity}`
-    );
-
-    // =====================================
-    // 🚨 ORDEM REAL SPOT
-    // =====================================
-    const order =
-      await client.submitOrder({
-
-        category: "spot",
-
-        symbol,
-
-        side:
-          action === "BUY"
-            ? "Buy"
-            : "Sell",
-
-        orderType: "Market",
-
-        qty: quantity.toString(),
-
-        marketUnit: "baseCoin"
-
-      });
-
-    console.log(
-      "✅ ORDEM EXECUTADA"
-    );
-
-    return {
-
-      success: true,
-
-      mode: "SPOT",
-
-      symbol,
-
-      side: action,
-
-      quantity,
-
-      price,
-
-      order
-
-    };
-
-  } catch (err) {
-
-    console.log(
-      "❌ Erro Bybit trade:",
-      err.message
-    );
-
-    return {
-
-      success: false,
-
-      error: err.message
-
-    };
-
-  }
-
+async function executeTrade({ coin, action, amount }) {
+  return {
+    success: false,
+    tradingEnabled: false,
+    mode: testnet ? "TESTNET" : "PRODUCTION",
+    error:
+      "Ordens bloqueadas durante a validação. " +
+      "Nenhuma ordem foi enviada à Binance."
+  };
 }
 
 module.exports = {
-
+  testConnection,
   getBalance,
-
   getPrice,
-
   executeTrade
-
 };
+    
