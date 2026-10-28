@@ -10,7 +10,7 @@ const client = Binance({
   ...(apiKey ? { apiKey } : {}),
   ...(apiSecret ? { apiSecret } : {}),
   ...(testnet
-    ? { httpBase: "https://testnet.binance.vision/api" }
+    ? { httpBase: "https://testnet.binance.vision" }
     : {})
 });
 
